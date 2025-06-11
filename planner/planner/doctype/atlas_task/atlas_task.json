@@ -1,0 +1,280 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "subject",
+  "project",
+  "status",
+  "priority",
+  "department",
+  "column_break_4",
+  "exp_start_date",
+  "exp_end_date",
+  "expected_time",
+  "progress",
+  "is_group",
+  "parent_task",
+  "description_section",
+  "description",
+  "depends_on_tasks_section",
+  "depends_on",
+  "assignment_section",
+  "_assign",
+  "sb_timeline",
+  "is_milestone",
+  "review_date",
+  "completed_by",
+  "completed_on",
+  "column_break_19",
+  "task_weight",
+  "type",
+  "color",
+  "begin_on",
+  "section_break_22",
+  "total_costing_amount",
+  "total_expense_claim",
+  "column_break_25",
+  "total_billing_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "TASK-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "label": "Subject",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nWorking\nPending Review\nOverdue\nCompleted\nCancelled",
+   "search_index": 1
+  },
+  {
+   "default": "Medium",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh\nUrgent",
+   "search_index": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "exp_start_date",
+   "fieldtype": "Date",
+   "label": "Expected Start Date",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "exp_end_date",
+   "fieldtype": "Date",
+   "label": "Expected End Date",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "expected_time",
+   "fieldtype": "Float",
+   "label": "Expected Time (in hours)"
+  },
+  {
+   "fieldname": "progress",
+   "fieldtype": "Percent",
+   "label": "Progress",
+   "no_copy": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_group",
+   "fieldtype": "Check",
+   "label": "Is Group"
+  },
+  {
+   "fieldname": "parent_task",
+   "fieldtype": "Link",
+   "label": "Parent Task",
+   "options": "Atlas Task"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "description_section",
+   "fieldtype": "Section Break",
+   "label": "Description"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description",
+   "width": "400"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "depends_on_tasks_section",
+   "fieldtype": "Section Break",
+   "label": "Depends On Tasks"
+  },
+  {
+   "fieldname": "depends_on",
+   "fieldtype": "Table",
+   "label": "Depends on",
+   "options": "Task Depends On"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment"
+  },
+  {
+   "fieldname": "_assign",
+   "fieldtype": "Small Text",
+   "hidden": 1,
+   "label": "Assigned To",
+   "no_copy": 1,
+   "print_hide": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_timeline",
+   "fieldtype": "Section Break",
+   "label": "More Info"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_milestone",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Is Milestone"
+  },
+  {
+   "fieldname": "review_date",
+   "fieldtype": "Date",
+   "label": "Review Date"
+  },
+  {
+   "fieldname": "completed_by",
+   "fieldtype": "Link",
+   "label": "Completed By",
+   "no_copy": 1,
+   "options": "User"
+  },
+  {
+   "fieldname": "completed_on",
+   "fieldtype": "Datetime",
+   "label": "Completed On",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_19",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "task_weight",
+   "fieldtype": "Float",
+   "label": "Weight"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Type",
+   "options": "Task Type"
+  },
+  {
+   "fieldname": "color",
+   "fieldtype": "Color",
+   "label": "Color"
+  },
+  {
+   "fieldname": "begin_on",
+   "fieldtype": "Date",
+   "label": "Begin On",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "section_break_22",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "total_costing_amount",
+   "fieldtype": "Currency",
+   "label": "Total Costing Amount (via Time Logs)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_expense_claim",
+   "fieldtype": "Currency",
+   "label": "Total Expense Claim (via Expense Claims)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_25",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_billing_amount",
+   "fieldtype": "Currency",
+   "label": "Total Billing Amount (via Time Logs)",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Planner",
+ "name": "Atlas Task",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
