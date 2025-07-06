@@ -1,80 +1,68 @@
 <template>
   <Layout :breadcrumbs="breadcrumbs">
     <div class="mx-auto px-4 lg:px-8 max-w-[2000px]">
-      <!-- Enhanced Header -->
-      <div class="planner-header mb-6 sticky top-0 z-50 bg-white dark:bg-gray-900 pb-4">
-        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+      <!-- Minimal Header -->
+      <div class="planner-header mb-6 sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm pb-4">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <!-- Title and Info -->
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-              <FeatherIcon name="calendar" class="w-6 h-6 text-white" />
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <FeatherIcon name="calendar" class="w-4 h-4 text-white" />
             </div>
             <div>
-              <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Team Planner</h1>
-              <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <div class="flex items-center gap-1">
-                  <FeatherIcon name="users" class="w-4 h-4" />
-                  <span>{{ department.value || 'All Departments' }}</span>
-                </div>
+              <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Team Planner</h1>
+              <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <span>{{ department.value || 'All Departments' }}</span>
                 <span class="w-1 h-1 bg-gray-400 rounded-full"></span>
-                <div class="flex items-center gap-1">
-                  <FeatherIcon name="clock" class="w-4 h-4" />
-                  <span>{{ formatCurrentPeriod() }}</span>
-                </div>
+                <span>{{ formatCurrentPeriod() }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Quick Stats Cards -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700">
-              <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ workloadStats.totalAssignees }}</div>
-              <div class="text-xs text-blue-600/70 dark:text-blue-400/70 font-medium">Team Members</div>
+          <!-- Compact Stats -->
+          <div class="grid grid-cols-4 gap-3">
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center min-w-[60px]">
+              <div class="text-lg font-semibold text-gray-900 dark:text-white">{{ workloadStats.totalAssignees }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">Team</div>
             </div>
-            
-            <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-4 border border-green-200 dark:border-green-700">
-              <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ workloadStats.scheduledTasks }}</div>
-              <div class="text-xs text-green-600/70 dark:text-green-400/70 font-medium">Scheduled</div>
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center min-w-[60px]">
+              <div class="text-lg font-semibold text-green-600 dark:text-green-400">{{ workloadStats.scheduledTasks }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">Active</div>
             </div>
-            
-            <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 rounded-xl p-4 border border-yellow-200 dark:border-yellow-700">
-              <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ workloadStats.unscheduledTasks }}</div>
-              <div class="text-xs text-yellow-600/70 dark:text-yellow-400/70 font-medium">Backlog</div>
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center min-w-[60px]">
+              <div class="text-lg font-semibold text-amber-600 dark:text-amber-400">{{ workloadStats.unscheduledTasks }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">Queue</div>
             </div>
-            
-            <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-4 border border-purple-200 dark:border-purple-700">
-              <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ Math.round(workloadStats.overallUtilization) }}%</div>
-              <div class="text-xs text-purple-600/70 dark:text-purple-400/70 font-medium">Utilization</div>
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center min-w-[60px]">
+              <div class="text-lg font-semibold text-blue-600 dark:text-blue-400">{{ Math.round(workloadStats.overallUtilization) }}%</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">Usage</div>
             </div>
           </div>
         </div>
 
-        <!-- Action Bar -->
-        <div class="flex items-center justify-between mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <div class="flex items-center gap-4">
+        <!-- Compact Action Bar -->
+        <div class="flex items-center justify-between mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div class="flex items-center gap-3">
             <!-- Department Filter -->
-            <div class="flex items-center gap-2">
-              <FeatherIcon name="filter" class="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <select 
-                v-model="department.value"
-                class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                @change="handleDepartmentChange"
-              >
-                <option value="">All Departments</option>
-                <option v-for="dept in availableDepartments" :key="dept" :value="dept">
-                  {{ dept }}
-                </option>
-              </select>
-            </div>
+            <select 
+              v-model="department.value"
+              class="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              @change="handleDepartmentChange"
+            >
+              <option value="">All Departments</option>
+              <option v-for="dept in availableDepartments" :key="dept" :value="dept">
+                {{ dept }}
+              </option>
+            </select>
 
-            <!-- View Mode Toggle -->
-            <div class="flex bg-white dark:bg-gray-700 rounded-lg p-1 border border-gray-200 dark:border-gray-600">
+            <!-- View Toggle -->
+            <div class="flex bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700">
               <button
                 @click="viewMode = 'week'"
                 :class="[
-                  'px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200',
+                  'px-3 py-1.5 text-sm font-medium rounded-l-md',
                   viewMode === 'week' 
-                    ? 'bg-blue-500 text-white shadow-sm' 
+                    ? 'bg-blue-500 text-white' 
                     : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                 ]"
               >
@@ -83,9 +71,9 @@
               <button
                 @click="viewMode = 'month'"
                 :class="[
-                  'px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200',
+                  'px-3 py-1.5 text-sm font-medium rounded-r-md border-l border-gray-200 dark:border-gray-700',
                   viewMode === 'month' 
-                    ? 'bg-blue-500 text-white shadow-sm' 
+                    ? 'bg-blue-500 text-white' 
                     : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                 ]"
               >
@@ -94,7 +82,7 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
             <!-- Refresh Button -->
             <Button 
               variant="ghost" 
@@ -102,6 +90,7 @@
               size="sm" 
               :loading="loading"
               @click="refreshData"
+              class="px-3 py-1.5"
             >
               <FeatherIcon name="refresh-cw" class="w-4 h-4" />
             </Button>
@@ -112,16 +101,17 @@
               theme="blue" 
               size="sm"
               @click="handleAddTask"
+              class="px-3 py-1.5"
             >
-              <FeatherIcon name="plus" class="w-4 h-4 mr-2" />
+              <FeatherIcon name="plus" class="w-4 h-4 mr-1" />
               Add Task
             </Button>
           </div>
         </div>
       </div>
 
-      <!-- Main Timeline View -->
-      <div class="timeline-container">
+      <!-- Timeline Container -->
+      <div class="timeline-container bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <TimelineViewRoster 
           :assignees="assignees"
           :tasks="tasks"
@@ -132,23 +122,23 @@
         />
       </div>
 
-      <!-- Task Details Modal/Sidebar -->
+      <!-- Task Modal -->
       <div 
         v-if="isTaskFormActive" 
         class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
         @click.self="closeTaskDetails"
       >
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-hidden">
-          <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-lg max-h-[90vh] overflow-hidden">
+          <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
               {{ activeTask ? 'Edit Task' : 'Create Task' }}
             </h2>
             <Button variant="ghost" theme="gray" size="sm" @click="closeTaskDetails">
-              <FeatherIcon name="x" class="w-5 h-5" />
+              <FeatherIcon name="x" class="w-4 h-4" />
             </Button>
           </div>
           
-          <div class="p-6 overflow-y-auto">
+          <div class="p-4 overflow-y-auto">
             <TaskForm 
               :task="activeTask" 
               :department="department.value"
@@ -161,12 +151,12 @@
         </div>
       </div>
 
-      <!-- Loading Overlay -->
+      <!-- Loading State -->
       <div v-if="loading" class="fixed inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center z-40">
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3">
-            <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-gray-900 dark:text-white font-medium">Loading timeline...</span>
+            <div class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-gray-900 dark:text-white text-sm">Loading...</span>
           </div>
         </div>
       </div>
@@ -313,33 +303,22 @@ onMounted(() => {
 
 <style scoped>
 .planner-header {
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .timeline-container {
-  min-height: 600px;
+  min-height: 500px;
 }
 
-/* Custom scrollbar for modal */
-.overflow-y-auto::-webkit-scrollbar {
-  @apply w-2;
-}
-
-.overflow-y-auto::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-gray-700;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-600 rounded;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-gray-500;
+/* Subtle focus states */
+select:focus,
+button:focus {
+  outline: none;
 }
 
 /* Smooth transitions */
 * {
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 /* Modal animation */
@@ -352,18 +331,15 @@ onMounted(() => {
   to { opacity: 1; }
 }
 
-.bg-white.dark\:bg-gray-800.rounded-2xl {
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from { 
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .planner-header {
+    position: relative;
+    top: auto;
   }
-  to { 
-    opacity: 1;
-    transform: translateY(0) scale(1);
+  
+  .timeline-container {
+    min-height: 400px;
   }
 }
 </style>

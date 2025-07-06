@@ -8,6 +8,14 @@ const Dashboard = () => import("@/pages/Dashboard.vue");
 const routes = [
   {
     path: "/",
+    name: "DynamicTimeline",
+    component: () => import("@/pages/DynamicTimelinePage.vue"),
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: "/dashboard",
     name: "Dashboard",
     component: () => import("@/pages/Dashboard.vue"),
     meta: {
@@ -82,7 +90,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.name === 'Login' && isLoggedIn) {
-    next({ name: 'Dashboard' })
+    next({ name: 'DynamicTimeline' })
   } else if (to.name !== 'Login' && !isLoggedIn) {
     next({ name: 'Login' })
   } else {

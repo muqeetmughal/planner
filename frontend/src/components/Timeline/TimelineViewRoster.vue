@@ -148,78 +148,88 @@
     <div class="flex gap-6">
       <!-- Timeline Table -->
       <div class="flex-1">
-        <div 
+        <div
           class="rounded-xl border overflow-hidden shadow-lg bg-white dark:bg-gray-800"
           :class="{ 'animate-pulse pointer-events-none': loading }"
         >
           <!-- Fixed header for scrolling -->
-          <div class="overflow-x-auto timeline-scroll-container" style="max-height: 70vh;">
-            <table class="border-separate border-spacing-0 w-full min-w-[1200px]">
-              <thead class="sticky top-0 z-20">
-                <tr class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800">
-                  <!-- Assignee Column -->
-                  <th class="assignee-column p-4 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 sticky left-0 z-30">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-2">
-                        <FeatherIcon name="users" class="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                        <span class="font-semibold text-gray-900 dark:text-white">Team Members</span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <FeatherIcon name="zap" class="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Capacity</span>
-                      </div>
+          <div class="timeline-header-container sticky top-0 z-20 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">
+            <div class="overflow-x-auto">
+              <div class="flex min-w-[1200px]">
+                <!-- Assignee Column Header -->
+                <div class="assignee-column p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 sticky left-0 z-30">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <FeatherIcon name="users" class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      <span class="font-semibold text-gray-900 dark:text-white">Team Members</span>
                     </div>
-                  </th>
+                    <div class="flex items-center gap-2">
+                      <FeatherIcon name="zap" class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Capacity</span>
+                    </div>
+                  </div>
+                </div>
 
-                  <!-- Date Columns -->
-                  <th
-                    v-for="(date, idx) in dateColumns"
-                    :key="date.key"
-                    class="date-column font-medium border-b border-gray-200 dark:border-gray-600 p-3 text-center"
-                    :class="{ 
-                      'border-l border-gray-200 dark:border-gray-600': idx >= 0,
-                      'bg-blue-50 dark:bg-blue-900/20': date.isToday,
-                      'bg-red-50 dark:bg-red-900/10': date.isWeekend && !date.isToday,
-                      'bg-yellow-50 dark:bg-yellow-900/10': date.isHoliday
-                    }"
-                  >
-                    <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                      {{ date.label }}
-                    </div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {{ date.sublabel }}
-                    </div>
-                    <div v-if="date.isToday" class="w-2 h-2 bg-blue-500 rounded-full mx-auto mt-1"></div>
-                    <div v-if="date.isHoliday" class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                      Holiday
-                    </div>
-                    <!-- Daily capacity indicator -->
-                    <div class="text-xs text-gray-400 mt-1">
-                      {{ getDayCapacity(date.date) }}h
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr 
-                  v-for="(assignee, rowIdx) in filteredAssignees" 
+                <!-- Date Column Headers -->
+                <div
+                  v-for="(date, idx) in dateColumns"
+                  :key="date.key"
+                  class="date-column font-medium p-3 text-center bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800"
+                  :class="{
+                    'border-l border-gray-200 dark:border-gray-600': idx >= 0,
+                    'bg-blue-50 dark:bg-blue-900/20': date.isToday,
+                    'bg-red-50 dark:bg-red-900/10': date.isWeekend && !date.isToday,
+                    'bg-yellow-50 dark:bg-yellow-900/10': date.isHoliday
+                  }"
+                >
+                  <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                    {{ date.label }}
+                  </div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {{ date.sublabel }}
+                  </div>
+                  <div v-if="date.isToday" class="w-2 h-2 bg-blue-500 rounded-full mx-auto mt-1"></div>
+                  <div v-if="date.isHoliday" class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                    Holiday
+                  </div>
+                  <!-- Daily capacity indicator -->
+                  <div class="text-xs text-gray-400 mt-1">
+                    {{ getDayCapacity(date.date) }}h
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Virtualized Timeline Body -->
+          <div
+            ref="containerRef"
+            class="timeline-scroll-container overflow-auto"
+            style="max-height: calc(70vh - 80px);"
+          >
+            <div class="overflow-x-auto">
+              <div class="min-w-[1200px]">
+                <!-- Virtual List Container -->
+                <div
+                  v-for="(assignee, rowIdx) in filteredAssignees"
                   :key="assignee.id"
-                  class="border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-all duration-200"
+                  class="flex border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-all duration-200"
                   :class="{ 'bg-red-50/30 dark:bg-red-900/10': isAssigneeOverloaded(assignee.id) }"
+                  :style="{ height: `${itemHeight}px` }"
                 >
                   <!-- Assignee Info Column -->
-                  <td class="assignee-column p-4 border-r border-gray-200 dark:border-gray-600 bg-gradient-to-r from-gray-50/50 to-transparent dark:from-gray-800/50 sticky left-0 z-10">
-                    <div class="flex items-center justify-between h-full min-h-[80px]">
+                  <div class="assignee-column p-4 border-r border-gray-200 dark:border-gray-600 bg-gradient-to-r from-gray-50/50 to-transparent dark:from-gray-800/50 sticky left-0 z-10">
+                    <div class="flex items-center justify-between h-full">
                       <div class="flex items-center gap-4">
                         <div class="relative">
-                          <Avatar 
-                            :image="assignee.image" 
+                          <Avatar
+                            :image="assignee.image"
                             :label="assignee.name"
                             size="md"
                             class="ring-2 ring-white dark:ring-gray-700 shadow-sm"
                           />
-                          <div 
-                            class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800" 
+                          <div
+                            class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800"
                             :class="getStatusIndicatorClass(assignee.id)"
                           ></div>
                         </div>
@@ -244,7 +254,7 @@
                           {{ Math.round(getAssigneeUtilization(assignee.id)) }}%
                         </div>
                         <div class="w-20 h-3 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden shadow-inner">
-                          <div 
+                          <div
                             class="h-full transition-all duration-500 ease-out rounded-full"
                             :class="getCapacityBarClass(getAssigneeUtilization(assignee.id))"
                             :style="{ width: `${Math.min(getAssigneeUtilization(assignee.id), 100)}%` }"
@@ -255,14 +265,13 @@
                         </div>
                       </div>
                     </div>
-                  </td>
+                  </div>
 
                   <!-- Date Cells -->
-                  <td
+                  <div
                     v-for="(date, colIdx) in dateColumns"
                     :key="`${assignee.id}-${date.key}`"
-                    class="date-cell p-2 relative min-h-[80px] align-top"
-                    :data-date="date.key"
+                    class="date-cell p-2 relative align-top flex-shrink-0"
                     :class="{
                       'border-l border-gray-200 dark:border-gray-600': colIdx >= 0,
                       'bg-blue-50/50 dark:bg-blue-900/10': date.isToday,
@@ -270,8 +279,7 @@
                       'bg-yellow-50/30 dark:bg-yellow-900/10': date.isHoliday,
                       'hover:bg-gray-50 dark:hover:bg-gray-700/20': !date.isToday && !date.isWeekend && !date.isHoliday,
                       'drop-zone-active': isDragOver && dragOverDate === date.key && dragOverAssignee === assignee.id,
-                      'resize-highlight': isResizing && resizeDirection?.value === 'end' && date.date <= resizeEndDate?.value && date.date >= resizeStartDate?.value,
-                      'overallocated': isDayOverallocated(assignee.id, date.date)
+                      'overallocated': taskLayout.get(assignee.id)?.get(date.key)?.isOverallocated
                     }"
                     @drop="handleDrop($event, assignee.id, date.date)"
                     @dragover.prevent="handleDragOver($event, assignee.id, date.key)"
@@ -288,58 +296,48 @@
                     
                     <!-- Daily Hours Indicator -->
                     <div class="absolute top-1 left-1/2 transform -translate-x-1/2 text-xs text-gray-400">
-                      {{ getDayScheduledHours(assignee.id, date.date) }}h
+                      {{ taskLayout.get(assignee.id)?.get(date.key)?.totalHours || 0 }}h
                     </div>
                     
-                    <!-- Task Blocks -->
-                    <div class="space-y-1 mt-4">
+                    <!-- Optimized Task Blocks using pre-calculated layout -->
+                    <div class="space-y-1 mt-4 relative">
                       <div
-                        v-for="task in getTasksForDateAndAssignee(assignee.id, date.date)"
+                        v-for="task in taskLayout.get(assignee.id)?.get(date.key)?.tasks || []"
                         :key="task.id"
-                        class="task-block group rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 relative cursor-move"
-                        :class="[
-                          getTaskBlockClass(task),
-                          { 'resizing': isResizing && resizingTask?.id === task.id }
-                        ]"
+                        class="task-block cursor-move group rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 absolute"
+                        :class="getTaskBlockClass(task)"
+                        :style="{
+                          top: `${task.position.top + 16}px`,
+                          left: '0',
+                          right: '0',
+                          zIndex: task.position.zIndex
+                        }"
                         @click.stop="$emit('taskClick', task.id)"
                         draggable="true"
                         @dragstart="handleDragStart($event, task)"
                         :title="`${task.title} - ${task.project} (${task.duration}h)`"
                       >
-                        <!-- Task content -->
                         <div class="text-xs text-white">
                           <div class="font-semibold truncate mb-1 text-[11px]">{{ task.title }}</div>
                           <div class="text-white/80 truncate text-[10px] mb-1">{{ task.project }}</div>
                           <div class="flex items-center justify-between">
                             <div class="text-white/70 text-[10px]">{{ task.duration }}h</div>
                             <div class="flex items-center gap-1">
-                              <div 
-                                class="w-1.5 h-1.5 rounded-full" 
+                              <div
+                                class="w-1.5 h-1.5 rounded-full"
                                 :class="getPriorityIndicatorClass(task.priority)"
                               ></div>
-                              <div 
+                              <div
                                 class="w-1.5 h-1.5 rounded-full"
                                 :class="getStatusIndicatorClass(task.status)"
                               ></div>
                             </div>
                           </div>
                         </div>
-
-                        <!-- Resize handles -->
-                        <div
-                          v-if="task.startDate && task.endDate"
-                          class="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20"
-                          @mousedown.stop="startResize($event, task, 'start')"
-                        ></div>
-                        <div
-                          v-if="task.startDate && task.endDate"
-                          class="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20"
-                          @mousedown.stop="startResize($event, task, 'end')"
-                        ></div>
                         
                         <!-- Task progress bar -->
                         <div v-if="task.progress > 0" class="absolute bottom-0 left-0 right-0 h-1 bg-white/20 rounded-b-lg overflow-hidden">
-                          <div 
+                          <div
                             class="h-full bg-white/60 transition-all duration-300"
                             :style="{ width: `${task.progress}%` }"
                           ></div>
@@ -353,20 +351,20 @@
                       variant="outline"
                       icon="plus"
                       size="sm"
-                      class="border-2 border-dashed border-gray-300 dark:border-gray-600 w-full mt-2 text-gray-500 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 text-xs py-1"
+                      class="border-2 border-dashed border-gray-300 dark:border-gray-600 w-full mt-2 text-gray-500 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 text-xs py-1 absolute bottom-2 left-2 right-2"
                       @click.stop="$emit('addTask', { assigneeId: assignee.id, date: date.date })"
                     >
                       Add Task
                     </Button>
 
                     <!-- Conflict Warning -->
-                    <div v-if="isDayOverallocated(assignee.id, date.date)" class="absolute bottom-1 right-1">
+                    <div v-if="taskLayout.get(assignee.id)?.get(date.key)?.isOverallocated" class="absolute bottom-1 right-1">
                       <FeatherIcon name="alert-triangle" class="w-3 h-3 text-red-500" />
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -420,7 +418,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { Avatar, Button, FeatherIcon } from 'frappe-ui'
 import BacklogPanel from './BacklogPanel.vue'
 
@@ -474,11 +472,12 @@ const isDragOver = ref(false)
 const dragOverAssignee = ref(null)
 const dragOverDate = ref(null)
 const hoveredCell = ref({ assignee: '', date: '' })
-const isResizing = ref(false)
-const resizingTask = ref(null)
-const resizeStartDate = ref(null)
-const resizeEndDate = ref(null)
-const resizeDirection = ref(null) // 'start' or 'end'
+
+// Virtual scrolling state
+const virtualListRef = ref(null)
+const containerRef = ref(null)
+const itemHeight = 100 // Height of each assignee row
+const overscan = 5 // Number of items to render outside visible area
 
 // Constants
 const viewModes = [
@@ -578,6 +577,53 @@ const filteredUnscheduledTasks = computed(() => {
 const uniqueProjects = computed(() => {
   const projects = [...new Set(props.tasks.map(task => task.project).filter(Boolean))]
   return projects.sort()
+})
+
+// Performance optimization: Pre-calculate task layout positions
+const taskLayout = computed(() => {
+  const layout = new Map()
+  
+  filteredAssignees.value.forEach(assignee => {
+    const assigneeLayout = new Map()
+    
+    dateColumns.value.forEach(dateCol => {
+      const tasks = getTasksForDateAndAssignee(assignee.id, dateCol.date)
+      const taskPositions = tasks.map((task, index) => ({
+        ...task,
+        position: {
+          top: index * 36, // 36px per task including margin
+          zIndex: tasks.length - index,
+          width: '100%'
+        },
+        scheduledHours: getDayScheduledHours(assignee.id, dateCol.date),
+        isOverallocated: isDayOverallocated(assignee.id, dateCol.date)
+      }))
+      
+      assigneeLayout.set(dateCol.key, {
+        tasks: taskPositions,
+        totalHours: getDayScheduledHours(assignee.id, dateCol.date),
+        capacity: getDayCapacity(dateCol.date),
+        isOverallocated: isDayOverallocated(assignee.id, dateCol.date)
+      })
+    })
+    
+    layout.set(assignee.id, assigneeLayout)
+  })
+  
+  return layout
+})
+
+// Virtual scrolling computed properties
+const visibleAssignees = computed(() => {
+  return filteredAssignees.value
+})
+
+const virtualizedAssignees = computed(() => {
+  return visibleAssignees.value.map((assignee, index) => ({
+    ...assignee,
+    index,
+    key: assignee.id
+  }))
 })
 
 // Summary statistics
@@ -932,69 +978,6 @@ const handleCellClick = (assigneeId, date) => {
   emit('cellClick', { assigneeId, date })
 }
 
-// Resize handlers
-const startResize = (event, task, direction) => {
-  event.stopPropagation()
-  isResizing.value = true
-  resizingTask.value = task
-  resizeDirection.value = direction
-  resizeStartDate.value = new Date(task.startDate)
-  resizeEndDate.value = new Date(task.endDate)
-  
-  // Add event listeners
-  window.addEventListener('mousemove', handleResize)
-  window.addEventListener('mouseup', endResize)
-}
-
-const handleResize = (event) => {
-  if (!isResizing.value || !resizingTask.value) return
-  
-  // Get the cell element under the mouse
-  const elementsUnderMouse = document.elementsFromPoint(event.clientX, event.clientY)
-  const cellElement = elementsUnderMouse.find(el => el.classList.contains('date-cell'))
-  
-  if (!cellElement) return
-  
-  // Get the date from the cell's data
-  const cellDate = dateColumns.value.find(col => 
-    cellElement.getAttribute('data-date') === col.key
-  )?.date
-  
-  if (!cellDate) return
-  
-  // Update the task dates based on resize direction
-  if (resizeDirection.value === 'start') {
-    if (cellDate <= resizeEndDate.value) {
-      resizeStartDate.value = cellDate
-    }
-  } else {
-    if (cellDate >= resizeStartDate.value) {
-      resizeEndDate.value = cellDate
-    }
-  }
-  
-  // Update the task in the parent component
-  emit('taskMove', {
-    taskId: resizingTask.value.id,
-    assigneeId: resizingTask.value.assignee,
-    startDate: resizeStartDate.value.toISOString(),
-    endDate: resizeEndDate.value.toISOString(),
-    operation: 'resize'
-  })
-}
-
-const endResize = () => {
-  isResizing.value = false
-  resizingTask.value = null
-  resizeDirection.value = null
-  resizeStartDate.value = null
-  resizeEndDate.value = null
-  
-  // Remove event listeners
-  window.removeEventListener('mousemove', handleResize)
-  window.removeEventListener('mouseup', endResize)
-}
-
 // Watch for prop changes
 watch(() => props.assignees, () => {
   // Recalculate when assignees change
@@ -1088,37 +1071,110 @@ onMounted(() => {
   @apply bg-red-50/50 dark:bg-red-900/20;
 }
 
-/* Enhanced responsive design */
+/* Enhanced responsive design for different view modes */
+
+/* Month view adjustments */
+.timeline-roster-view[data-view-mode="month"] .date-column,
+.timeline-roster-view[data-view-mode="month"] .date-cell {
+  min-width: 80px;
+  max-width: 80px;
+  width: 80px;
+}
+
+.timeline-roster-view[data-view-mode="month"] .assignee-column {
+  min-width: 240px;
+  max-width: 240px;
+}
+
+/* Biweek view adjustments */
+.timeline-roster-view[data-view-mode="biweek"] .date-column,
+.timeline-roster-view[data-view-mode="biweek"] .date-cell {
+  min-width: 100px;
+  max-width: 100px;
+  width: 100px;
+}
+
+.timeline-roster-view[data-view-mode="biweek"] .assignee-column {
+  min-width: 260px;
+  max-width: 260px;
+}
+
+/* Responsive breakpoints */
 @media (max-width: 1024px) {
   .assignee-column {
-    min-width: 220px;
-    max-width: 220px;
+    min-width: 220px !important;
+    max-width: 220px !important;
   }
   
   .date-column,
   .date-cell {
-    min-width: 100px;
-    max-width: 100px;
-    width: 100px;
+    min-width: 90px !important;
+    max-width: 90px !important;
+    width: 90px !important;
+  }
+  
+  .timeline-roster-view[data-view-mode="month"] .date-column,
+  .timeline-roster-view[data-view-mode="month"] .date-cell {
+    min-width: 70px !important;
+    max-width: 70px !important;
+    width: 70px !important;
   }
 }
 
 @media (max-width: 768px) {
   .assignee-column {
-    min-width: 180px;
-    max-width: 180px;
+    min-width: 180px !important;
+    max-width: 180px !important;
   }
   
   .date-column,
   .date-cell {
-    min-width: 80px;
-    max-width: 80px;
-    width: 80px;
+    min-width: 70px !important;
+    max-width: 70px !important;
+    width: 70px !important;
+  }
+  
+  .timeline-roster-view[data-view-mode="month"] .date-column,
+  .timeline-roster-view[data-view-mode="month"] .date-cell {
+    min-width: 50px !important;
+    max-width: 50px !important;
+    width: 50px !important;
   }
   
   .task-block {
-    padding: 0.375rem;
-    min-height: 28px;
+    padding: 0.25rem !important;
+    min-height: 24px !important;
+    font-size: 10px !important;
+  }
+  
+  .timeline-header {
+    padding: 1rem !important;
+  }
+  
+  .timeline-header .flex {
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .assignee-column {
+    min-width: 150px !important;
+    max-width: 150px !important;
+  }
+  
+  .date-column,
+  .date-cell {
+    min-width: 60px !important;
+    max-width: 60px !important;
+    width: 60px !important;
+  }
+  
+  .timeline-roster-view[data-view-mode="month"] .date-column,
+  .timeline-roster-view[data-view-mode="month"] .date-cell {
+    min-width: 40px !important;
+    max-width: 40px !important;
+    width: 40px !important;
   }
 }
 
@@ -1184,45 +1240,5 @@ onMounted(() => {
 /* Dark mode scrollbar */
 .dark * {
   scrollbar-color: rgb(75 85 99) rgb(55 65 81);
-}
-
-.task-block.resizing {
-  opacity: 0.8;
-  cursor: ew-resize !important;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
-}
-
-.resize-highlight {
-  background-color: rgba(219, 234, 254, 0.3);
-}
-
-.dark .resize-highlight {
-  background-color: rgba(30, 58, 138, 0.2);
-}
-
-.task-block .resize-handle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  cursor: ew-resize;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.task-block .resize-handle:hover,
-.task-block:hover .resize-handle {
-  opacity: 1;
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.task-block .resize-handle-left {
-  left: 0;
-}
-
-.task-block .resize-handle-right {
-  right: 0;
 }
 </style>
