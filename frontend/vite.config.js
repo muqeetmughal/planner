@@ -4,7 +4,6 @@ import path from 'path'
 import frappeui from 'frappe-ui/vite'
 
 export default defineConfig({
-  
   plugins: [frappeui(), vue()],
   resolve: {
     alias: {
@@ -15,8 +14,30 @@ export default defineConfig({
     outDir: `../${path.basename(path.resolve('..'))}/public/frontend`,
     emptyOutDir: true,
     target: 'es2015',
+    rollupOptions: {
+      external: [],
+      output: {
+        manualChunks: {
+          vendor: ['vue', 'vue-router'],
+          ui: ['frappe-ui'],
+          utils: ['dayjs']
+        }
+      }
+    }
   },
   optimizeDeps: {
-    include: ['frappe-ui > feather-icons', 'showdown', 'engine.io-client'],
+    include: [
+      'frappe-ui > feather-icons', 
+      'showdown', 
+      'engine.io-client',
+      'dayjs',
+      'dayjs/plugin/utc',
+      'dayjs/plugin/timezone',
+      'dayjs/plugin/weekday',
+      'dayjs/plugin/isoWeek',
+      'dayjs/plugin/customParseFormat',
+      'dayjs/plugin/relativeTime',
+      'dayjs/plugin/duration'
+    ],
   },
 })

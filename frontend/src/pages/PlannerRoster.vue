@@ -1,345 +1,583 @@
 <template>
-  <Layout :breadcrumbs="breadcrumbs">
-    <div class="mx-auto px-4 lg:px-8 max-w-[2000px]">
-      <!-- Minimal Header -->
-      <div class="planner-header mb-6 sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm pb-4">
-        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <!-- Title and Info -->
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-              <FeatherIcon name="calendar" class="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Team Planner</h1>
-              <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1">
-                <span>{{ department.value || 'All Departments' }}</span>
-                <span class="w-1 h-1 bg-gray-400 rounded-full"></span>
-                <span>{{ formatCurrentPeriod() }}</span>
-              </div>
-            </div>
-          </div>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Enhanced Header -->
+    <RosterHeader
+      :title="pageTitle"
+      :view-mode="viewMode"
+      :current-date="currentDate"
+      :current-department="selectedDepartment"
+      :current-company="selectedCompany"
+      :departments="departments"
+      :companies="companies"
+      :stats="workloadStats"
+      :loading="loading"
+      @view-mode-change="handleViewModeChange"
+      @date-change="handleDateChange"
+      @department-change="handleDepartmentChange"
+      @company-change="handleCompanyChange"
+      @refresh="handleRefresh"
+      @add-task="handleAddTask"
+    />
 
-          <!-- Compact Stats -->
-          <div class="grid grid-cols-4 gap-3">
-            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center min-w-[60px]">
-              <div class="text-lg font-semibold text-gray-900 dark:text-white">{{ workloadStats.totalAssignees }}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Team</div>
-            </div>
-            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center min-w-[60px]">
-              <div class="text-lg font-semibold text-green-600 dark:text-green-400">{{ workloadStats.scheduledTasks }}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Active</div>
-            </div>
-            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center min-w-[60px]">
-              <div class="text-lg font-semibold text-amber-600 dark:text-amber-400">{{ workloadStats.unscheduledTasks }}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Queue</div>
-            </div>
-            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center min-w-[60px]">
-              <div class="text-lg font-semibold text-blue-600 dark:text-blue-400">{{ Math.round(workloadStats.overallUtilization) }}%</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">Usage</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Compact Action Bar -->
-        <div class="flex items-center justify-between mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <div class="flex items-center gap-3">
-            <!-- Department Filter -->
-            <select 
-              v-model="department.value"
-              class="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              @change="handleDepartmentChange"
-            >
-              <option value="">All Departments</option>
-              <option v-for="dept in availableDepartments" :key="dept" :value="dept">
-                {{ dept }}
-              </option>
-            </select>
-
-            <!-- View Toggle -->
-            <div class="flex bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700">
-              <button
-                @click="viewMode = 'week'"
-                :class="[
-                  'px-3 py-1.5 text-sm font-medium rounded-l-md',
-                  viewMode === 'week' 
-                    ? 'bg-blue-500 text-white' 
-                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                ]"
-              >
-                Week
-              </button>
-              <button
-                @click="viewMode = 'month'"
-                :class="[
-                  'px-3 py-1.5 text-sm font-medium rounded-r-md border-l border-gray-200 dark:border-gray-700',
-                  viewMode === 'month' 
-                    ? 'bg-blue-500 text-white' 
-                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                ]"
-              >
-                Month
-              </button>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <!-- Refresh Button -->
-            <Button 
-              variant="ghost" 
-              theme="gray" 
-              size="sm" 
-              :loading="loading"
-              @click="refreshData"
-              class="px-3 py-1.5"
-            >
-              <FeatherIcon name="refresh-cw" class="w-4 h-4" />
-            </Button>
-
-            <!-- Add Task Button -->
-            <Button 
-              variant="solid" 
-              theme="blue" 
-              size="sm"
-              @click="handleAddTask"
-              class="px-3 py-1.5"
-            >
-              <FeatherIcon name="plus" class="w-4 h-4 mr-1" />
-              Add Task
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Timeline Container -->
-      <div class="timeline-container bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <TimelineViewRoster 
-          :assignees="assignees"
-          :tasks="tasks"
-          :loading="loading"
-          @taskClick="handleTaskClick"
-          @taskMove="handleTaskMove"
-          @addTask="handleAddTask"
-        />
-      </div>
-
-      <!-- Task Modal -->
-      <div 
-        v-if="isTaskFormActive" 
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-        @click.self="closeTaskDetails"
-      >
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-lg max-h-[90vh] overflow-hidden">
-          <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ activeTask ? 'Edit Task' : 'Create Task' }}
-            </h2>
-            <Button variant="ghost" theme="gray" size="sm" @click="closeTaskDetails">
-              <FeatherIcon name="x" class="w-4 h-4" />
-            </Button>
-          </div>
-          
-          <div class="p-4 overflow-y-auto">
-            <TaskForm 
-              :task="activeTask" 
-              :department="department.value"
-              :assignees="assignees"
-              @close="closeTaskDetails"
-              @update="handleTaskUpdate"
-              @create="handleTaskCreate"
-            />
-          </div>
-        </div>
-      </div>
-
+    <!-- Main Content -->
+    <div class="px-6 pb-6">
       <!-- Loading State -->
-      <div v-if="loading" class="fixed inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center z-40">
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-200 dark:border-gray-700">
-          <div class="flex items-center gap-3">
-            <div class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-gray-900 dark:text-white text-sm">Loading...</span>
+      <div v-if="loading" class="flex items-center justify-center py-12">
+        <div class="flex items-center gap-3 text-gray-500 dark:text-gray-400">
+          <div
+            class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"
+          ></div>
+          <span>Loading team planner...</span>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div
+        v-else-if="error"
+        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-6"
+      >
+        <div class="flex items-center gap-3">
+          <FeatherIcon name="alert-circle" class="w-6 h-6 text-red-500" />
+          <div>
+            <h3 class="font-semibold text-red-800 dark:text-red-200">
+              Error Loading Data
+            </h3>
+            <p class="text-sm text-red-600 dark:text-red-300 mt-1">
+              {{ error }}
+            </p>
+            <Button
+              variant="solid"
+              theme="red"
+              size="sm"
+              @click="handleRefresh"
+              class="mt-3"
+            >
+              <FeatherIcon name="refresh-cw" class="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
           </div>
         </div>
+      </div>
+
+      <!-- Empty State -->
+      <div
+        v-else-if="!assignees.length"
+        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center"
+      >
+        <div
+          class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4"
+        >
+          <FeatherIcon name="users" class="w-8 h-8 text-gray-400" />
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          No Team Members Found
+        </h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-6">
+          {{
+            selectedDepartment
+              ? `No team members found in ${selectedDepartment} department.`
+              : "No team members available for planning."
+          }}
+        </p>
+        <div class="flex justify-center gap-3">
+          <Button variant="ghost" theme="gray" @click="handleRefresh">
+            <FeatherIcon name="refresh-cw" class="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+          <Button variant="solid" theme="blue" @click="handleAddTask">
+            <FeatherIcon name="plus" class="w-4 h-4 mr-2" />
+            Add Task
+          </Button>
+        </div>
+      </div>
+
+      <!-- Roster Table -->
+      <RosterTable
+        v-else
+        :assignees="assignees"
+        :assignments="assignments"
+        :date-range="dateRange"
+        :view-mode="viewMode"
+        :loading="loading"
+        @cell-click="handleCellClick"
+        @assignment-click="handleAssignmentClick"
+        @assignment-drag="handleAssignmentDrag"
+        @assignment-drop="handleAssignmentDrop"
+        @assignment-delete="handleAssignmentDelete"
+      />
+    </div>
+
+    <!-- Task Assignment Dialog -->
+    <TaskAssignmentDialog
+      v-model="showAssignmentDialog"
+      :selected-date="selectedDate"
+      :selected-assignee="selectedAssignee"
+      :existing-assignment="selectedAssignment"
+      :existing-assignments="assignments"
+      @submit="handleAssignmentSubmit"
+      @cancel="handleAssignmentCancel"
+    />
+
+    <!-- Confirmation Dialog -->
+    <Dialog
+      v-model="showConfirmDialog"
+      :options="{
+        title: confirmDialog.title,
+        size: 'md',
+        actions: [
+          {
+            label: 'Cancel',
+            theme: 'gray',
+            variant: 'ghost',
+            onClick: () => (showConfirmDialog = false),
+          },
+          {
+            label: confirmDialog.confirmLabel,
+            theme: confirmDialog.theme,
+            variant: 'solid',
+            loading: confirmDialog.loading,
+            onClick: confirmDialog.onConfirm,
+          },
+        ],
+      }"
+    >
+      <div class="flex items-start gap-3">
+        <FeatherIcon
+          :name="confirmDialog.icon"
+          :class="[
+            'w-6 h-6 mt-1',
+            confirmDialog.theme === 'red' ? 'text-red-500' : 'text-amber-500',
+          ]"
+        />
+        <div>
+          <p class="text-gray-700 dark:text-gray-300">
+            {{ confirmDialog.message }}
+          </p>
+          <p
+            v-if="confirmDialog.details"
+            class="text-sm text-gray-500 dark:text-gray-400 mt-2"
+          >
+            {{ confirmDialog.details }}
+          </p>
+        </div>
+      </div>
+    </Dialog>
+
+    <!-- Toast Notifications -->
+    <div class="fixed bottom-4 right-4 z-50 space-y-2">
+      <div
+        v-for="toast in toasts"
+        :key="toast.id"
+        :class="[
+          'flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border max-w-sm transform transition-all duration-300',
+          toast.type === 'success'
+            ? 'bg-green-50 border-green-200 text-green-800'
+            : '',
+          toast.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' : '',
+          toast.type === 'warning'
+            ? 'bg-amber-50 border-amber-200 text-amber-800'
+            : '',
+          toast.type === 'info'
+            ? 'bg-blue-50 border-blue-200 text-blue-800'
+            : '',
+        ]"
+      >
+        <FeatherIcon
+          :name="getToastIcon(toast.type)"
+          class="w-5 h-5 flex-shrink-0"
+        />
+        <div class="flex-1">
+          <p class="font-medium">{{ toast.title }}</p>
+          <p v-if="toast.message" class="text-sm opacity-90">
+            {{ toast.message }}
+          </p>
+        </div>
+        <button
+          @click="removeToast(toast.id)"
+          class="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <FeatherIcon name="x" class="w-4 h-4" />
+        </button>
       </div>
     </div>
-  </Layout>
+  </div>
 </template>
 
 <script setup>
-import Layout from "@/pages/shared/Layout.vue"
-import { ref, computed, onMounted, watch } from "vue"
-import { useRoute } from 'vue-router'
-import { Button, FeatherIcon } from 'frappe-ui'
-import TimelineViewRoster from "@/components/Timeline/TimelineViewRoster.vue"
-import TaskForm from "@/components/Task/TaskForm.vue"
-import { useWorkloadManager } from "@/composables/useWorkloadManager"
-
-const route = useRoute()
+import { ref, computed, onMounted, watch } from "vue";
+import { Button, Dialog, FeatherIcon } from "frappe-ui";
+import { call } from "frappe-ui";
+import { dayjs } from "@/utils/dateUtils";
+import RosterHeader from "@/components/Roster/RosterHeader.vue";
+import RosterTable from "@/components/Roster/RosterTable.vue";
+import TaskAssignmentDialog from "@/components/Roster/TaskAssignmentDialog.vue";
 
 // Reactive state
-const department = ref(route.params.department || '')
-const dashboardName = ref(route.params.dashboardName || 'Team Planner')
-const viewMode = ref('week')
-const isTaskFormActive = ref(false)
-const activeTask = ref(null)
+const loading = ref(false);
+const error = ref(null);
+const viewMode = ref("week");
+const currentDate = ref(dayjs());
+const selectedDepartment = ref("");
+const selectedCompany = ref("");
 
-// Breadcrumbs
-const breadcrumbs = computed(() => [
-  {
-    label: 'Dashboard',
-    route: { name: 'Dashboard' }
-  },
-  {
-    label: dashboardName.value,
-    route: { name: 'PlannerRoster' }
-  }
-])
+// Data
+const assignees = ref([]);
+const assignments = ref([]);
+const departments = ref([]);
+const companies = ref([]);
 
-// Initialize workload manager
-const {
-  assignees,
-  tasks,
-  loading,
-  workloadStats,
-  overallocatedAssignees,
-  underutilizedAssignees,
-  loadWorkloadData,
-  moveTask,
-  updateTask,
-  createTask
-} = useWorkloadManager(department.value)
+// Dialog state
+const showAssignmentDialog = ref(false);
+
+const selectedDate = ref(null);
+const selectedAssignee = ref(null);
+const selectedAssignment = ref(null);
+
+// Confirmation dialog
+const showConfirmDialog = ref(false);
+const confirmDialog = ref({
+  title: "",
+  message: "",
+  details: "",
+  confirmLabel: "Confirm",
+  theme: "red",
+  icon: "alert-triangle",
+  loading: false,
+  onConfirm: () => {},
+});
+
+// Toast notifications
+const toasts = ref([]);
+let toastId = 0;
 
 // Computed properties
-const availableDepartments = computed(() => {
-  const departments = new Set()
-  assignees.value.forEach(assignee => {
-    if (assignee.department) {
-      departments.add(assignee.department)
-    }
-  })
-  return Array.from(departments).sort()
-})
+const pageTitle = computed(() => {
+  if (selectedDepartment.value) {
+    return `${selectedDepartment.value} Planner`;
+  }
+  return "Team Planner";
+});
+
+const dateRange = computed(() => {
+  if (viewMode.value === "week") {
+    const startOfWeek = getWeekStart(currentDate.value);
+    return Array.from({ length: 7 }, (_, i) => startOfWeek.add(i, "day"));
+  } else {
+    const startOfMonth = currentDate.value.startOf("month");
+    const endOfMonth = currentDate.value.endOf("month");
+    const daysInMonth = endOfMonth.date();
+    return Array.from({ length: daysInMonth }, (_, i) =>
+      startOfMonth.add(i, "day"),
+    );
+  }
+});
+
+const workloadStats = computed(() => {
+  const totalAssignees = assignees.value.length;
+  const activeTasks = assignments.value.filter(
+    (a) => a.status === "Active",
+  ).length;
+  const pendingTasks = assignments.value.filter(
+    (a) => a.status === "Pending",
+  ).length;
+
+  let totalUtilization = 0;
+  if (totalAssignees > 0) {
+    const utilizationSum = assignees.value.reduce((sum, assignee) => {
+      const assigneeAssignments = assignments.value.filter(
+        (a) => a.assignee === assignee.name,
+      );
+      const totalHours = assigneeAssignments.reduce((hours, assignment) => {
+        const start = dayjs(`2023-01-01 ${assignment.start_time}`);
+        const end = dayjs(`2023-01-01 ${assignment.end_time}`);
+        return hours + end.diff(start, "hour", true);
+      }, 0);
+      return sum + Math.min((totalHours / 8) * 100, 100); // Cap at 100%
+    }, 0);
+    totalUtilization = utilizationSum / totalAssignees;
+  }
+
+  return {
+    totalAssignees,
+    activeTasks,
+    pendingTasks,
+    avgUtilization: totalUtilization,
+  };
+});
 
 // Methods
-const refreshData = async () => {
-  await loadWorkloadData(null, null, true)
-}
+const getWeekStart = (date) => {
+  const d = dayjs(date);
+  const day = d.day();
+  const diff = d.date() - day + (day === 0 ? -6 : 1);
+  return d.date(diff);
+};
 
-const handleDepartmentChange = () => {
-  loadWorkloadData(null, null, true)
-}
+const loadData = async () => {
+  loading.value = true;
+  error.value = null;
 
-const handleTaskClick = (taskId) => {
-  const task = tasks.value.find(t => t.id === taskId)
-  activeTask.value = task || null
-  isTaskFormActive.value = true
-}
-
-const handleTaskMove = async (data) => {
   try {
-    await moveTask(data.taskId, data.assigneeId, data.startDate, data.endDate)
-  } catch (error) {
-    console.error('Error moving task:', error)
-  }
-}
+    const [assigneesData, assignmentsData, filtersData] = await Promise.all([
+      call("planner.api.roster.get_assignees", {
+        department: selectedDepartment.value,
+        company: selectedCompany.value,
+      }),
+      call("planner.api.roster.get_assignments", {
+        start_date: dateRange.value[0].format("YYYY-MM-DD"),
+        end_date:
+          dateRange.value[dateRange.value.length - 1].format("YYYY-MM-DD"),
+        department: selectedDepartment.value,
+        company: selectedCompany.value,
+      }),
+      call("planner.api.roster.get_filters"),
+    ]);
 
-const handleTaskUpdate = async (data) => {
+    assignees.value = assigneesData || [];
+    assignments.value = assignmentsData || [];
+    departments.value = filtersData?.departments || [];
+    companies.value = filtersData?.companies || [];
+  } catch (err) {
+    console.error("Error loading data:", err);
+    error.value = err.message || "Failed to load planner data";
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleViewModeChange = (mode) => {
+  viewMode.value = mode;
+  loadData();
+};
+
+const handleDateChange = (date) => {
+  currentDate.value = date;
+  loadData();
+};
+
+const handleDepartmentChange = (department) => {
+  selectedDepartment.value = department;
+  loadData();
+};
+
+const handleCompanyChange = (company) => {
+  selectedCompany.value = company;
+  loadData();
+};
+
+const handleRefresh = () => {
+  loadData();
+};
+
+const handleAddTask = () => {
+  console.log("🔥 PlannerRoster handleAddTask called (header button)");
+  selectedDate.value = dayjs().format("YYYY-MM-DD");
+  selectedAssignee.value = null;
+  selectedAssignment.value = null;
+  showAssignmentDialog.value = true;
+  console.log("🔥 showAssignmentDialog set to true from header");
+};
+
+const handleCellClick = (date, assignee) => {
+  console.log("🔥 PlannerRoster handleCellClick received:", { date, assignee });
+  selectedDate.value = date;
+  selectedAssignee.value = assignee;
+  selectedAssignment.value = null;
+  showAssignmentDialog.value = true;
+  console.log("🔥 showAssignmentDialog set to true");
+};
+
+const handleAssignmentClick = (assignment) => {
+  selectedDate.value = assignment.date;
+  selectedAssignee.value = assignees.value.find(
+    (a) => a.name === assignment.assignee,
+  );
+  selectedAssignment.value = assignment;
+  showAssignmentDialog.value = true;
+};
+
+const handleAssignmentDrag = (assignment) => {
+  // Handle drag start
+  console.log("Drag started:", assignment);
+};
+
+const handleAssignmentDrop = async (assignment, newDate, newAssignee) => {
   try {
-    await updateTask(data.taskId, data.updates)
-    closeTaskDetails()
-  } catch (error) {
-    console.error('Error updating task:', error)
-  }
-}
+    await call("planner.api.roster.move_assignment", {
+      assignment_id: assignment.name,
+      new_date: newDate,
+      new_assignee: newAssignee,
+    });
 
-const handleTaskCreate = async (taskData) => {
+    showToast(
+      "success",
+      "Assignment Moved",
+      "Task assignment has been successfully moved.",
+    );
+    loadData();
+  } catch (err) {
+    console.error("Error moving assignment:", err);
+    showToast(
+      "error",
+      "Move Failed",
+      err.message || "Failed to move assignment",
+    );
+  }
+};
+
+const handleAssignmentDelete = (assignment) => {
+  confirmDialog.value = {
+    title: "Delete Assignment",
+    message: "Are you sure you want to delete this task assignment?",
+    details: `This will remove "${assignment.task_name}" from ${assignment.assignee_name} on ${dayjs(assignment.date).format("MMM D, YYYY")}.`,
+    confirmLabel: "Delete Assignment",
+    theme: "red",
+    icon: "trash-2",
+    loading: false,
+    onConfirm: async () => {
+      confirmDialog.value.loading = true;
+      try {
+        await call("planner.api.roster.delete_assignment", {
+          assignment_id: assignment.name,
+        });
+
+        showConfirmDialog.value = false;
+        showToast(
+          "success",
+          "Assignment Deleted",
+          "Task assignment has been successfully deleted.",
+        );
+        loadData();
+      } catch (err) {
+        console.error("Error deleting assignment:", err);
+        showToast(
+          "error",
+          "Delete Failed",
+          err.message || "Failed to delete assignment",
+        );
+      } finally {
+        confirmDialog.value.loading = false;
+      }
+    },
+  };
+  showConfirmDialog.value = true;
+};
+
+const handleAssignmentSubmit = async (assignmentData) => {
   try {
-    await createTask(taskData)
-    closeTaskDetails()
-  } catch (error) {
-    console.error('Error creating task:', error)
+    if (selectedAssignment.value) {
+      await call("planner.api.roster.update_assignment", assignmentData);
+      showToast(
+        "success",
+        "Assignment Updated",
+        "Task assignment has been successfully updated.",
+      );
+    } else {
+      await call("planner.api.roster.create_assignment", assignmentData);
+      showToast(
+        "success",
+        "Assignment Created",
+        "Task assignment has been successfully created.",
+      );
+    }
+
+    showAssignmentDialog.value = false;
+    loadData();
+  } catch (err) {
+    console.error("Error saving assignment:", err);
+    showToast(
+      "error",
+      "Save Failed",
+      err.message || "Failed to save assignment",
+    );
   }
-}
+};
 
-const handleAddTask = (data = {}) => {
-  activeTask.value = null // New task
-  isTaskFormActive.value = true
-}
+const handleAssignmentCancel = () => {
+  showAssignmentDialog.value = false;
+  selectedDate.value = null;
+  selectedAssignee.value = null;
+  selectedAssignment.value = null;
+};
 
-const closeTaskDetails = () => {
-  activeTask.value = null
-  isTaskFormActive.value = false
-}
+// Toast methods
+const showToast = (type, title, message = "") => {
+  const toast = {
+    id: ++toastId,
+    type,
+    title,
+    message,
+  };
+  toasts.value.push(toast);
 
-const formatCurrentPeriod = () => {
-  const now = new Date()
-  if (viewMode.value === 'week') {
-    const startOfWeek = new Date(now)
-    const day = startOfWeek.getDay()
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1)
-    startOfWeek.setDate(diff)
-    
-    const endOfWeek = new Date(startOfWeek)
-    endOfWeek.setDate(startOfWeek.getDate() + 6)
-    
-    return `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-  } else {
-    return now.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    removeToast(toast.id);
+  }, 5000);
+};
+
+const removeToast = (id) => {
+  const index = toasts.value.findIndex((t) => t.id === id);
+  if (index > -1) {
+    toasts.value.splice(index, 1);
   }
-}
+};
 
-// Watch for route changes
-watch(() => route.params.department, (newDepartment) => {
-  if (newDepartment !== department.value) {
-    department.value = newDepartment || ''
-    loadWorkloadData(null, null, true)
-  }
-}, { immediate: true })
+const getToastIcon = (type) => {
+  const icons = {
+    success: "check-circle",
+    error: "alert-circle",
+    warning: "alert-triangle",
+    info: "info",
+  };
+  return icons[type] || "info";
+};
 
-// Initialize
+// Lifecycle
 onMounted(() => {
-  loadWorkloadData()
-})
+  loadData();
+});
+
+// Watchers
+watch(
+  [viewMode, currentDate, selectedDepartment, selectedCompany],
+  () => {
+    loadData();
+  },
+  { deep: true },
+);
 </script>
 
 <style scoped>
-.planner-header {
-  transition: all 0.2s ease;
-}
-
-.timeline-container {
-  min-height: 500px;
-}
-
-/* Subtle focus states */
-select:focus,
-button:focus {
-  outline: none;
-}
-
 /* Smooth transitions */
 * {
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Modal animation */
-.fixed.inset-0 {
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Mobile responsive */
-@media (max-width: 768px) {
-  .planner-header {
-    position: relative;
-    top: auto;
+/* Loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
-  
-  .timeline-container {
-    min-height: 400px;
-  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Toast animations */
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
 }
 </style>

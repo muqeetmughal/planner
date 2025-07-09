@@ -5,6 +5,7 @@ from planner.services.workload_service import WorkloadService
 from planner.services.task_service import TaskService
 import frappe
 import traceback
+import json
 
 @frappe.whitelist(allow_guest=True)
 def oauth_providers():
@@ -16,7 +17,7 @@ def verify_task_structure():
     """Verify Atlas Task doctype structure and required fields"""
     try:
         print("\n=== Verifying Atlas Task Structure ===")
-        
+
         # Check if Atlas Task doctype exists
         if not frappe.db.exists("DocType", "Atlas Task"):
             print("ERROR: Atlas Task DocType does not exist!")
@@ -25,7 +26,7 @@ def verify_task_structure():
                 "Task Structure Error",
                 {"doctype_exists": False}
             )
-            
+
         # Get Atlas Task doctype fields
         task_meta = frappe.get_meta("Atlas Task")
         print("\nAtlas Task Fields:")
@@ -36,19 +37,19 @@ def verify_task_structure():
                 "name": field.fieldname,
                 "type": field.fieldtype
             })
-            
+
         # Check required fields exist
         required_fields = [
-            "name", "subject", "status", "priority", 
+            "name", "subject", "status", "priority",
             "exp_start_date", "exp_end_date", "expected_time",
             "department", "_assign"
         ]
-        
+
         missing_fields = []
         for field in required_fields:
             if not task_meta.get_field(field):
                 missing_fields.append(field)
-                
+
         if missing_fields:
             print("\nMissing required fields:", missing_fields)
             return handle_api_error(
@@ -60,14 +61,14 @@ def verify_task_structure():
                     "missing_fields": missing_fields
                 }
             )
-            
+
         print("\nAll required fields present")
         return {
             "success": True,
             "message": "Atlas Task structure verified",
             "fields": field_info
         }
-        
+
     except Exception as e:
         return handle_api_error(e, "Task Structure Error")
 
@@ -77,7 +78,7 @@ def handle_api_error(e, error_title, fallback_data=None):
     frappe.log_error(error_traceback, error_title)
     print(f"ERROR: {error_title}: {str(e)}")
     print(f"Full traceback: {error_traceback}")
-    
+
     if isinstance(e, frappe.PermissionError):
         exc_type = "PermissionError"
     elif isinstance(e, frappe.ValidationError):
@@ -88,7 +89,7 @@ def handle_api_error(e, error_title, fallback_data=None):
         exc_type = "AttributeError"
     else:
         exc_type = e.__class__.__name__
-    
+
     error_response = {
         "message": error_title,
         "_error_message": str(e),
@@ -99,14 +100,14 @@ def handle_api_error(e, error_title, fallback_data=None):
         "success": False,
         "data": fallback_data
     }
-    
+
     frappe.clear_messages()
     frappe.local.response.http_status_code = 500
     frappe.local.response.error = True
-    
+
     for key, value in error_response.items():
         setattr(frappe.local.response, key, value)
-    
+
     return error_response
 
 @frappe.whitelist()
@@ -117,29 +118,29 @@ def get_workload_data(department=None, start_date=None, end_date=None):
         print(f"Department: {department}")
         print(f"Start Date: {start_date}")
         print(f"End Date: {end_date}")
-        
+
         if not hasattr(WorkloadService, 'get_workload_data'):
             raise AttributeError("WorkloadService.get_workload_data method not found")
-            
+
         workload_data = WorkloadService.get_workload_data(department, start_date, end_date)
-        
+
         if not isinstance(workload_data, dict):
             workload_data = {
                 "assignees": [],
                 "tasks": [],
                 "capacity_settings": {}
             }
-        
+
         workload_data.setdefault("assignees", [])
         workload_data.setdefault("tasks", [])
         workload_data.setdefault("capacity_settings", {})
-        
+
         print(f"\n=== Final Workload Data ===")
         print(f"Total Assignees: {len(workload_data['assignees'])}")
         print(f"Total Tasks: {len(workload_data['tasks'])}")
-        
+
         return workload_data
-        
+
     except Exception as e:
         try:
             fallback_data = {
@@ -157,14 +158,14 @@ def get_workload_data(department=None, start_date=None, end_date=None):
                     "default_days_per_week": 5
                 }
             }
-        
+
         return handle_api_error(e, "Workload Data Error", fallback_data)
 
 def get_fallback_workload_data(department=None):
     """Get fallback workload data when WorkloadService fails"""
     try:
         print("Generating fallback workload data...")
-        
+
         capacity_settings = {}
         try:
             if hasattr(WorkloadService, 'get_capacity_settings'):
@@ -174,22 +175,22 @@ def get_fallback_workload_data(department=None):
                 "hours_per_day": 8,
                 "working_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
             }
-        
+
         assignees = []
         tasks = []
-        
+
         try:
             employee_filters = {"status": "Active"}
             if department:
                 employee_filters["department"] = department
-                
+
             employees = frappe.get_all(
                 "Employee",
                 filters=employee_filters,
                 fields=["name", "employee_name", "user_id", "department"],
                 limit=50
             )
-            
+
             for emp in employees:
                 if emp.user_id:
                     assignees.append({
@@ -198,11 +199,11 @@ def get_fallback_workload_data(department=None):
                         "email": emp.user_id,
                         "department": emp.department
                     })
-            
+
             task_filters = {"status": ["in", ["Open", "Working"]]}
             if department:
                 task_filters["department"] = department
-                
+
             task_list = frappe.get_all(
                 "Atlas Task",
                 filters=task_filters,
@@ -213,7 +214,7 @@ def get_fallback_workload_data(department=None):
                 ],
                 limit=100
             )
-            
+
             for task in task_list:
                 assignee = get_primary_assignee(task)
                 tasks.append({
@@ -227,18 +228,18 @@ def get_fallback_workload_data(department=None):
                     "assignee": assignee,
                     "department": task.department
                 })
-                
+
         except Exception as data_error:
             print(f"Error getting fallback data: {str(data_error)}")
-        
+
         print(f"Fallback data: {len(assignees)} assignees, {len(tasks)} tasks")
-        
+
         return {
             "assignees": assignees,
             "tasks": tasks,
             "capacity_settings": capacity_settings
         }
-        
+
     except Exception as e:
         print(f"Error in get_fallback_workload_data: {str(e)}")
         return {
@@ -256,11 +257,11 @@ def create_atlas_task(task_data):
     try:
         if not task_data:
             frappe.throw(_("Task data is required"))
-            
+
         # Convert task_data from string to dict if needed
         if isinstance(task_data, str):
             task_data = frappe.parse_json(task_data)
-            
+
         # Create task
         task = frappe.get_doc({
             "doctype": "Atlas Task",
@@ -278,9 +279,9 @@ def create_atlas_task(task_data):
             "color": task_data.get("color"),
             "is_milestone": task_data.get("is_milestone", 0)
         })
-        
+
         task.insert()
-        
+
         print(f"""
 Created Atlas Task:
 - Name: {task.name}
@@ -288,13 +289,13 @@ Created Atlas Task:
 - Department: {task.department}
 - Assigned to: {task._assign}
 """)
-        
+
         return {
             "success": True,
             "message": "Task created successfully",
             "task": task.as_dict()
         }
-        
+
     except Exception as e:
         return handle_api_error(e, "Task Creation Error")
 
@@ -305,7 +306,7 @@ def create_test_task():
         verify_result = verify_task_structure()
         if not verify_result.get("success"):
             return verify_result
-            
+
         departments = frappe.get_all("Department", fields=["name"])
         if not departments:
             return handle_api_error(
@@ -313,9 +314,9 @@ def create_test_task():
                 "Test Task Creation Error",
                 {"departments_exist": False}
             )
-            
+
         department = departments[0].name
-        
+
         employees = frappe.get_all(
             "Employee",
             filters={"department": department, "status": "Active"},
@@ -331,9 +332,9 @@ def create_test_task():
                     "employees_exist": False
                 }
             )
-            
+
         employee = employees[0]
-        
+
         task = frappe.get_doc({
             "doctype": "Atlas Task",
             "subject": "Test Task",
@@ -347,14 +348,14 @@ def create_test_task():
             "description": f"Test task created for debugging purposes in department {department}"
         })
         task.insert()
-        
+
         print(f"""
 Created test task:
 - Name: {task.name}
 - Department: {task.department}
 - Assigned to: {task._assign}
 """)
-        
+
         return {
             "success": True,
             "message": "Test task created successfully",
@@ -368,7 +369,7 @@ Created test task:
                 }
             }
         }
-        
+
     except Exception as e:
         return handle_api_error(
             e,
@@ -393,7 +394,7 @@ def list_tasks():
             ],
             order_by="creation desc"
         )
-        
+
         formatted_tasks = []
         for task in tasks:
             try:
@@ -402,7 +403,7 @@ def list_tasks():
                     assigned_users = frappe.parse_json(task._assign)
                     if assigned_users and len(assigned_users) > 0:
                         assignee = assigned_users[0]
-                
+
                 formatted_tasks.append({
                     "id": task.name,
                     "title": task.subject,
@@ -417,13 +418,13 @@ def list_tasks():
             except Exception as e:
                 print(f"Error formatting task {task.name}: {str(e)}")
                 continue
-        
+
         print(f"Found {len(tasks)} total tasks, {len(formatted_tasks)} formatted successfully")
         return {
             "total_count": len(tasks),
             "tasks": formatted_tasks
         }
-        
+
     except Exception as e:
         print(f"Error listing tasks: {str(e)}")
         frappe.log_error(frappe.get_traceback(), "List Tasks Error")
@@ -432,22 +433,22 @@ def list_tasks():
 @frappe.whitelist()
 def planner_get_backlog(searchtext=None, projectText=None):
     """Get Atlas Tasks for the backlog with enhanced search"""
-    print(f"\n=== Planner Backlog Request ===") 
+    print(f"\n=== Planner Backlog Request ===")
     try:
         filters = {
             "_assign": ["is", "null"],
         }
-        
+
         if searchtext:
             filters.update({
                 "subject": ["like", f"%{searchtext}%"]
             })
-        
+
         if projectText:
             filters.update({
                 "project": ["like", f"%{projectText}%"]
             })
-        
+
         tasks = frappe.get_all(
             "Atlas Task",
             filters=filters,
@@ -458,10 +459,10 @@ def planner_get_backlog(searchtext=None, projectText=None):
             ],
             order_by="creation desc"
         )
-        
+
         for task in tasks:
             task.color = get_task_color(task)
-        
+
         return tasks
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Planner Backlog Error")
@@ -473,31 +474,31 @@ def update_task(**kwargs):
     try:
         task_id = kwargs.get('task_id')
         updates = kwargs.get('updates')
-        
+
         if not task_id:
             frappe.throw(_("Task ID is required"))
-        
+
         task = frappe.get_doc("Atlas Task", task_id)
-        
+
         valid_fields = [
             "status", "priority", "exp_start_date",
             "exp_end_date", "expected_time", "description"
         ]
-        
+
         for field, value in updates.items():
             if field not in valid_fields:
                 frappe.throw(_(f"Invalid field: {field}"))
-            
+
             setattr(task, field, value)
-        
+
         task.modified = now_datetime()
         task.save()
-        
+
         try:
             emit_task_update(task)
         except:
             pass
-        
+
         return task.as_dict()
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Update Task Error")
@@ -509,7 +510,7 @@ def batch_update_tasks(updates):
     try:
         if not updates:
             frappe.throw(_("No updates provided"))
-        
+
         if hasattr(TaskService, 'batch_update_tasks'):
             updated_tasks = TaskService.batch_update_tasks(updates)
         else:
@@ -518,7 +519,7 @@ def batch_update_tasks(updates):
                 result = update_task(update.get('task_id'), update.get('updates', {}))
                 if 'error' not in result:
                     updated_tasks.append(result)
-        
+
         return updated_tasks
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Batch Update Tasks Error")
@@ -532,13 +533,13 @@ def get_task_color(task):
         "Overdue": "#EF4444",    # red
         "Open": "#6B7280"        # gray
     }
-    
+
     priority_colors = {
         "High": "#DC2626",       # red
         "Medium": "#F59E0B",     # amber
         "Low": "#10B981"         # green
     }
-    
+
     return status_colors.get(task.status) or priority_colors.get(task.priority) or "#6B7280"
 
 def get_task_assignees(task):
@@ -562,7 +563,7 @@ def get_task_assignees(task):
                     })
     except Exception as e:
         frappe.logger().error(f"Error getting task assignees: {str(e)}")
-    
+
     return assignees
 
 def get_primary_assignee(task):
@@ -572,7 +573,7 @@ def get_primary_assignee(task):
             frappe.logger().debug(f"Task {task.name} _assign field: {task._assign}")
             assigned_users = frappe.parse_json(task._assign)
             frappe.logger().debug(f"Parsed assigned users: {assigned_users}")
-            
+
             if assigned_users and len(assigned_users) > 0:
                 assignee = assigned_users[0]
                 user_exists = frappe.db.exists("User", assignee)
@@ -586,7 +587,7 @@ def get_primary_assignee(task):
             frappe.logger().debug(f"No _assign field for task {task.name}")
     except Exception as e:
         frappe.logger().error(f"Error getting primary assignee for task {task.name}: {str(e)}")
-    
+
     return "Unassigned"
 
 @frappe.whitelist()
@@ -595,9 +596,9 @@ def move_task(task_id, assignee_id=None, start_date=None, end_date=None):
     try:
         if not task_id:
             frappe.throw(_("Task ID is required"))
-        
+
         task = frappe.get_doc("Atlas Task", task_id)
-        
+
         if assignee_id:
             if assignee_id == "unassigned":
                 task._assign = None
@@ -607,12 +608,12 @@ def move_task(task_id, assignee_id=None, start_date=None, end_date=None):
                     task._assign = frappe.as_json([assignee_id])
                 else:
                     frappe.throw(_("Invalid assignee"))
-        
+
         if start_date:
             task.exp_start_date = getdate(start_date)
         if end_date:
             task.exp_end_date = getdate(end_date)
-        
+
         try:
             task.save(ignore_version=True)
             frappe.db.commit()
@@ -620,15 +621,378 @@ def move_task(task_id, assignee_id=None, start_date=None, end_date=None):
             task.reload()
             task.save(ignore_version=True)
             frappe.db.commit()
-        
+
         emit_task_update(task)
-        
+
         return {
             "success": True,
             "task": TaskService.format_task(task),
             "message": "Task moved successfully"
         }
-        
+
     except Exception as e:
         frappe.logger().error(f"Error moving task: {str(e)}")
         return handle_api_error(e, "Move Task Error")
+
+# =============================================================================
+# TIMELINE API FUNCTIONS
+# =============================================================================
+
+@frappe.whitelist()
+def get_timeline_data(configuration_name, start_date=None, end_date=None, filters=None):
+	"""Get dynamic timeline data based on configuration"""
+	try:
+		# Get configuration
+		config = frappe.get_doc("Timeline Configuration", configuration_name)
+		if not config.is_active:
+			frappe.throw(_("Timeline Configuration is not active"))
+
+		# Parse filters
+		if isinstance(filters, str):
+			try:
+				filters = json.loads(filters) if filters else {}
+			except:
+				filters = {}
+		elif not filters:
+			filters = {}
+
+		# Set default date range if not provided
+		if not start_date:
+			start_date = frappe.utils.nowdate()
+		if not end_date:
+			end_date = add_days(start_date, 30)  # Default 30-day range
+
+		# Get row entities (e.g., Workstations)
+		rows = get_timeline_row_entities(config, filters)
+
+		# Get block entities (e.g., Work Orders)
+		blocks = get_timeline_block_entities(config, start_date, end_date, filters)
+
+		return {
+			"success": True,
+			"config": {
+				"name": config.name,
+				"configuration_name": config.configuration_name,
+				"description": config.description,
+				"row_doctype": config.row_doctype,
+				"block_doctype": config.block_doctype,
+				"field_mappings": {
+					"row_to_block_field": config.row_to_block_field,
+					"block_to_date_field": config.block_to_date_field,
+					"row_label_field": config.row_label_field,
+					"block_label_field": config.block_label_field,
+					"block_color_field": config.block_color_field,
+					"date_range_start_field": config.date_range_start_field,
+					"date_range_end_field": config.date_range_end_field,
+					"block_duration_field": config.block_duration_field,
+					"block_status_field": config.block_status_field,
+					"block_priority_field": config.block_priority_field
+				}
+			},
+			"rows": rows,
+			"blocks": blocks,
+			"date_range": {
+				"start_date": start_date,
+				"end_date": end_date
+			}
+		}
+
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Timeline Data Error")
+		return {
+			"success": False,
+			"error": str(e),
+			"rows": [],
+			"blocks": [],
+			"config": None
+		}
+
+def get_timeline_row_entities(config, filters=None):
+	"""Get row entities based on configuration"""
+	try:
+		# Build filters for row doctype
+		row_filters = {}
+		if filters and filters.get("row_filters"):
+			row_filters.update(filters["row_filters"])
+
+		# Get required fields
+		fields = ["name", config.row_label_field]
+
+		# Add additional fields that might be useful
+		row_meta = frappe.get_meta(config.row_doctype)
+		additional_fields = ["status", "department", "company", "disabled"]
+		for field in additional_fields:
+			if row_meta.get_field(field):
+				fields.append(field)
+
+		# Remove duplicates
+		fields = list(set(fields))
+
+		# Get row entities
+		rows = frappe.get_all(
+			config.row_doctype,
+			filters=row_filters,
+			fields=fields,
+			order_by=config.row_label_field
+		)
+
+		# Format row data
+		formatted_rows = []
+		for row in rows:
+			formatted_row = {
+				"id": row.name,
+				"name": row.name,
+				"label": row.get(config.row_label_field) or row.name,
+				"doctype": config.row_doctype
+			}
+
+			# Add additional fields
+			for field in fields:
+				if field not in ["name", config.row_label_field]:
+					formatted_row[field] = row.get(field)
+
+			formatted_rows.append(formatted_row)
+
+		return formatted_rows
+
+	except Exception as e:
+		frappe.log_error(f"Error getting row entities: {str(e)}", "Timeline Row Entities Error")
+		return []
+
+def get_timeline_block_entities(config, start_date, end_date, filters=None):
+	"""Get block entities based on configuration and date range"""
+	try:
+		# Build filters for block doctype
+		block_filters = {}
+		if filters and filters.get("block_filters"):
+			block_filters.update(filters["block_filters"])
+
+		# Add date range filter
+		date_field = config.block_to_date_field
+		if config.date_range_start_field and config.date_range_end_field:
+			# Handle date range blocks
+			block_filters.update({
+				config.date_range_start_field: ["<=", end_date],
+				config.date_range_end_field: [">=", start_date]
+			})
+		else:
+			# Handle single date blocks
+			block_filters.update({
+				date_field: ["between", [start_date, end_date]]
+			})
+
+		# Get required fields
+		fields = [
+			"name",
+			config.row_to_block_field,
+			config.block_to_date_field,
+			config.block_label_field
+		]
+
+		# Add optional fields if they exist
+		optional_fields = [
+			config.block_color_field,
+			config.date_range_start_field,
+			config.date_range_end_field,
+			config.block_duration_field,
+			config.block_status_field,
+			config.block_priority_field
+		]
+
+		for field in optional_fields:
+			if field:
+				fields.append(field)
+
+		# Add common useful fields
+		block_meta = frappe.get_meta(config.block_doctype)
+		additional_fields = ["status", "priority", "progress", "description", "owner", "creation", "modified"]
+		for field in additional_fields:
+			if block_meta.get_field(field) and field not in fields:
+				fields.append(field)
+
+		# Remove duplicates and None values
+		fields = list(set([f for f in fields if f]))
+
+		# Get block entities
+		blocks = frappe.get_all(
+			config.block_doctype,
+			filters=block_filters,
+			fields=fields,
+			order_by=f"{config.block_to_date_field} asc"
+		)
+
+		# Format block data
+		formatted_blocks = []
+		for block in blocks:
+			formatted_block = {
+				"id": block.name,
+				"name": block.name,
+				"label": block.get(config.block_label_field) or block.name,
+				"doctype": config.block_doctype,
+				"row_id": block.get(config.row_to_block_field),
+				"date": block.get(config.block_to_date_field)
+			}
+
+			# Add date range if available
+			if config.date_range_start_field and config.date_range_end_field:
+				formatted_block["start_date"] = block.get(config.date_range_start_field)
+				formatted_block["end_date"] = block.get(config.date_range_end_field)
+
+			# Add optional fields
+			if config.block_duration_field:
+				formatted_block["duration"] = block.get(config.block_duration_field) or 0
+
+			if config.block_status_field:
+				formatted_block["status"] = block.get(config.block_status_field)
+
+			if config.block_priority_field:
+				formatted_block["priority"] = block.get(config.block_priority_field)
+
+			if config.block_color_field:
+				formatted_block["color"] = block.get(config.block_color_field)
+
+			# Add other useful fields
+			for field in ["progress", "description", "owner", "creation", "modified"]:
+				if field in fields:
+					formatted_block[field] = block.get(field)
+
+			formatted_blocks.append(formatted_block)
+
+		return formatted_blocks
+
+	except Exception as e:
+		frappe.log_error(f"Error getting block entities: {str(e)}", "Timeline Block Entities Error")
+		return []
+
+@frappe.whitelist()
+def update_block_assignment(block_doctype, block_name, new_row_assignment, new_date=None, config_name=None):
+	"""Update block assignment to a different row or date"""
+	try:
+		# Get the block document
+		block_doc = frappe.get_doc(block_doctype, block_name)
+
+		# Get configuration if provided
+		config = None
+		if config_name:
+			config = frappe.get_doc("Timeline Configuration", config_name)
+
+		# Store old values for logging
+		old_row_assignment = None
+		old_date = None
+
+		# Update row assignment
+		if new_row_assignment and config:
+			old_row_assignment = getattr(block_doc, config.row_to_block_field, None)
+			setattr(block_doc, config.row_to_block_field, new_row_assignment)
+
+		# Update date if provided
+		if new_date and config:
+			old_date = getattr(block_doc, config.block_to_date_field, None)
+			setattr(block_doc, config.block_to_date_field, getdate(new_date))
+
+		# Handle date range updates if applicable
+		if config and config.date_range_start_field and config.date_range_end_field and new_date:
+			# If block has date range, update both start and end dates
+			current_start = getattr(block_doc, config.date_range_start_field, None)
+			current_end = getattr(block_doc, config.date_range_end_field, None)
+
+			if current_start and current_end:
+				# Calculate duration
+				duration = date_diff(current_end, current_start)
+				new_start_date = getdate(new_date)
+				new_end_date = add_days(new_start_date, duration)
+
+				setattr(block_doc, config.date_range_start_field, new_start_date)
+				setattr(block_doc, config.date_range_end_field, new_end_date)
+
+		# Save the document
+		block_doc.save(ignore_permissions=True)
+		frappe.db.commit()
+
+		# Log the change
+		frappe.log_error(
+			f"Block {block_name} moved from {old_row_assignment} to {new_row_assignment}, date: {old_date} to {new_date}",
+			"Block Assignment Update"
+		)
+
+		return {
+			"success": True,
+			"message": "Block assignment updated successfully",
+			"block": block_doc.as_dict(),
+			"old_row_assignment": old_row_assignment,
+			"new_row_assignment": new_row_assignment,
+			"old_date": old_date,
+			"new_date": new_date
+		}
+
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Update Block Assignment Error")
+		frappe.db.rollback()
+		return {
+			"success": False,
+			"error": str(e)
+		}
+
+@frappe.whitelist()
+def get_timeline_configurations():
+	"""Get available timeline configurations for selection"""
+	try:
+		configurations = frappe.get_all(
+			"Timeline Configuration",
+			filters={"is_active": 1},
+			fields=["name", "configuration_name", "description", "row_doctype", "block_doctype"],
+			order_by="configuration_name"
+		)
+		return configurations
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Get Timeline Configurations Error")
+		return []
+
+@frappe.whitelist()
+def create_sample_workstation_configuration():
+	"""Create sample configuration for Workstation -> Work Order timeline"""
+	try:
+		# Check if configuration already exists
+		if frappe.db.exists("Timeline Configuration", "workstation-work-order"):
+			return {
+				"success": True,
+				"message": "Configuration already exists",
+				"name": "workstation-work-order"
+			}
+
+		# Create the configuration
+		config = frappe.get_doc({
+			"doctype": "Timeline Configuration",
+			"configuration_name": "Job Card Planning",
+			"description": "Plan Work Orders across Workstations for Job Card scheduling",
+			"is_active": 1,
+			"row_doctype": "Workstation",
+			"block_doctype": "Work Order",
+			"row_to_block_field": "workstation",
+			"block_to_date_field": "planned_start_date",
+			"row_label_field": "workstation_name",
+			"block_label_field": "production_item",
+			"block_color_field": "status",
+			"date_range_start_field": "planned_start_date",
+			"date_range_end_field": "planned_end_date",
+			"block_duration_field": "expected_time",
+			"block_status_field": "status",
+			"block_priority_field": "priority"
+		})
+
+		config.insert(ignore_permissions=True)
+		frappe.db.commit()
+
+		return {
+			"success": True,
+			"message": "Sample configuration created successfully",
+			"name": config.name
+		}
+
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Create Sample Configuration Error")
+		frappe.db.rollback()
+		return {
+			"success": False,
+			"error": str(e)
+		}

@@ -1,0 +1,218 @@
+{
+  "api_tests": [
+    {
+      "test_name": "File missing: planner/planner/api/__init__.py",
+      "success": false,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287069",
+      "details": {}
+    },
+    {
+      "test_name": "File missing: planner/planner/api/timeline_data.py",
+      "success": false,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287143",
+      "details": {}
+    },
+    {
+      "test_name": "File missing: planner/planner/api/roster.py",
+      "success": false,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287186",
+      "details": {}
+    },
+    {
+      "test_name": "Failed to import API functions",
+      "success": false,
+      "message": "No module named 'planner.planner.api'",
+      "timestamp": "2025-07-09T01:17:32.290802",
+      "details": {}
+    }
+  ],
+  "frontend_tests": [
+    {
+      "test_name": "Component exists: frontend/src/components/Timeline/DynamicTimeline.vue",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287248",
+      "details": {}
+    },
+    {
+      "test_name": "Component exists: frontend/src/components/Timeline/DynamicTimelineGrid.vue",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287278",
+      "details": {}
+    },
+    {
+      "test_name": "Component exists: frontend/src/components/Timeline/DynamicTimelineBlock.vue",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287304",
+      "details": {}
+    },
+    {
+      "test_name": "Component exists: frontend/src/components/Timeline/DynamicBlockDetails.vue",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287326",
+      "details": {}
+    },
+    {
+      "test_name": "Component exists: frontend/src/components/Timeline/ConfigurationSelector.vue",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287348",
+      "details": {}
+    },
+    {
+      "test_name": "Component exists: frontend/src/components/shared/Toast.vue",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287375",
+      "details": {}
+    },
+    {
+      "test_name": "Component exists: frontend/src/composables/useToast.js",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287414",
+      "details": {}
+    },
+    {
+      "test_name": "Component exists: frontend/src/pages/DynamicTimelinePage.vue",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287451",
+      "details": {}
+    },
+    {
+      "test_name": "Imports correct in frontend/src/components/Timeline/DynamicTimeline.vue",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.291141",
+      "details": {}
+    },
+    {
+      "test_name": "Imports correct in frontend/src/components/Timeline/ConfigurationSelector.vue",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.291355",
+      "details": {}
+    },
+    {
+      "test_name": "Imports correct in frontend/src/components/shared/Toast.vue",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.291497",
+      "details": {}
+    },
+    {
+      "test_name": "Imports correct in frontend/src/composables/useToast.js",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.291625",
+      "details": {}
+    },
+    {
+      "test_name": "Imports correct in frontend/src/App.vue",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.291747",
+      "details": {}
+    }
+  ],
+  "integration_tests": [
+    {
+      "test_name": "DocType file exists: planner/planner/doctype/timeline_configuration/timeline_configuration.json",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287523",
+      "details": {}
+    },
+    {
+      "test_name": "DocType file exists: planner/planner/doctype/timeline_configuration/timeline_configuration.py",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287564",
+      "details": {}
+    },
+    {
+      "test_name": "DocType file exists: planner/planner/doctype/timeline_configuration/setup_sample_configurations.py",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.287599",
+      "details": {}
+    },
+    {
+      "test_name": "Test file missing: planner/planner/tests/test_timeline_api.py",
+      "success": false,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.291841",
+      "details": {}
+    },
+    {
+      "test_name": "Failed to import configuration functions",
+      "success": false,
+      "message": "No module named 'frappe'",
+      "timestamp": "2025-07-09T01:17:32.300252",
+      "details": {}
+    },
+    {
+      "test_name": "Documentation exists: DYNAMIC_TIMELINE_ENHANCEMENTS.md",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.300392",
+      "details": {}
+    },
+    {
+      "test_name": "Documentation exists: README.md",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.300436",
+      "details": {}
+    },
+    {
+      "test_name": "Security issues found",
+      "success": false,
+      "message": "Issues: ['./validate_timeline_system.py: Uses eval()', './validate_timeline_system.py: Uses exec()']",
+      "timestamp": "2025-07-09T01:17:32.615420",
+      "details": {}
+    }
+  ],
+  "performance_tests": [
+    {
+      "test_name": "Large files detected",
+      "success": false,
+      "message": "Files over 100KB: [('./planner/public/frontend/assets/ui-CYUnyjvI.js', 645660), ('./frontend/node_modules/moment/moment.js', 176435), ('./frontend/node_modules/moment/dist/moment.js', 156326), ('./frontend/node_modules/moment/min/locales.min.js', 316025), ('./frontend/node_modules/moment/min/locales.js', 456892), ('./frontend/node_modules/moment/min/moment-with-locales.js', 632739), ('./frontend/node_modules/moment/min/moment-with-locales.min.js', 375055), ('./frontend/node_modules/@tiptap/core/dist/index.umd.js', 179410), ('./frontend/node_modules/@tiptap/core/dist/index.js', 167785), ('./frontend/node_modules/@vue/server-renderer/dist/server-renderer.esm-browser.js', 232366), ('./frontend/node_modules/@vue/test-utils/dist/vue-test-utils.esm-browser.js', 490509), ('./frontend/node_modules/@vue/test-utils/dist/vue-test-utils.browser.js', 338169), ('./frontend/node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js', 307840), ('./frontend/node_modules/@vue/compiler-dom/dist/compiler-dom.global.js', 202326), ('./frontend/node_modules/@vue/compiler-dom/dist/compiler-dom.esm-browser.js', 185474), ('./frontend/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js', 328462), ('./frontend/node_modules/@vue/runtime-dom/dist/runtime-dom.global.js', 353844), ('./frontend/node_modules/@vue/compiler-sfc/dist/compiler-sfc.esm-browser.js', 1580225), ('./frontend/node_modules/@vue/compiler-sfc/dist/compiler-sfc.cjs.js', 665076), ('./frontend/node_modules/@vue/compiler-core/dist/compiler-core.cjs.js', 195630), ('./frontend/node_modules/@vue/compiler-core/dist/compiler-core.cjs.prod.js', 190765), ('./frontend/node_modules/@vue/compiler-core/dist/compiler-core.esm-bundler.js', 169411), ('./frontend/node_modules/@vue/runtime-core/dist/runtime-core.cjs.prod.js', 186668), ('./frontend/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js', 242926), ('./frontend/node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js', 251052), ('./frontend/node_modules/prosemirror-view/dist/index.js', 235035), ('./frontend/node_modules/sortablejs/Sortable.js', 126600), ('./frontend/node_modules/sortablejs/modular/sortable.esm.js', 119797), ('./frontend/node_modules/sortablejs/modular/sortable.core.esm.js', 119797), ('./frontend/node_modules/sortablejs/modular/sortable.complete.esm.js', 119800), ('./frontend/node_modules/markdown-it/dist/index.cjs.js', 163051), ('./frontend/node_modules/markdown-it/dist/markdown-it.min.js', 123618), ('./frontend/node_modules/markdown-it/dist/markdown-it.js', 298975), ('./frontend/node_modules/vis-timeline/dist/vis-timeline-graph2d.esm.js', 1552089), ('./frontend/node_modules/vis-timeline/dist/vis-timeline-graph2d.min.js', 549643), ('./frontend/node_modules/vis-timeline/peer/esm/vis-timeline-graph2d.js', 1181759), ('./frontend/node_modules/vis-timeline/peer/esm/vis-timeline-graph2d.min.js', 426337), ('./frontend/node_modules/vis-timeline/peer/umd/vis-timeline-graph2d.js', 1215062), ('./frontend/node_modules/vis-timeline/peer/umd/vis-timeline-graph2d.min.js', 426659), ('./frontend/node_modules/vis-timeline/standalone/esm/vis-timeline-graph2d.js', 1580209), ('./frontend/node_modules/vis-timeline/standalone/esm/vis-timeline-graph2d.min.js', 568960), ('./frontend/node_modules/vis-timeline/standalone/umd/vis-timeline-graph2d.js', 1623709), ('./frontend/node_modules/vis-timeline/standalone/umd/vis-timeline-graph2d.min.js', 569230), ('./frontend/node_modules/vis-timeline/esnext/esm/vis-timeline-graph2d.js', 627941), ('./frontend/node_modules/vis-timeline/esnext/esm/vis-timeline-graph2d.min.js', 253789), ('./frontend/node_modules/vis-timeline/esnext/umd/vis-timeline-graph2d.js', 646504), ('./frontend/node_modules/vis-timeline/esnext/umd/vis-timeline-graph2d.min.js', 254528), ('./frontend/node_modules/vee-validate/dist/vee-validate.js', 134819), ('./frontend/node_modules/vee-validate/dist/vee-validate.esm.js', 137848), ('./frontend/node_modules/@asamuzakjp/css-color/dist/browser/css-color.min.js', 190509), ('./frontend/node_modules/vue-router/dist/vue-router.global.js', 158601), ('./frontend/node_modules/vue-router/dist/vue-router.esm-browser.js', 145236), ('./frontend/node_modules/vitest/dist/vendor/index.xL8XjTLv.js', 100749), ('./frontend/node_modules/vitest/dist/vendor/vi.YFlodzP_.js', 114357), ('./frontend/node_modules/vitest/dist/vendor/index.-xs08BYx.js', 196463), ('./frontend/node_modules/vitest/dist/vendor/cli-api.OdDWuB7Y.js', 557541), ('./frontend/node_modules/vue-draggable-next/dist/vue-draggable-next.global.js', 110738), ('./frontend/node_modules/vue-draggable-next/dist/vue-draggable-next.cjs.js', 104920), ('./frontend/node_modules/vue-draggable-next/dist/vue-draggable-next.esm-browser.js', 104843), ('./frontend/node_modules/vue-draggable-next/dist/vue-draggable-next.esm-bundler.js', 104843), ('./frontend/node_modules/vue-draggable-next/dist/vue-draggable-next.cjs.prod.js', 104920), ('./frontend/node_modules/psl/data/rules.js', 181684), ('./frontend/node_modules/feather-icons/dist/feather.js', 158902), ('./frontend/node_modules/acorn/dist/acorn.js', 238400), ('./frontend/node_modules/rollup/dist/shared/index.js', 121656), ('./frontend/node_modules/rollup/dist/shared/rollup.js', 800017), ('./frontend/node_modules/rollup/dist/es/shared/node-entry.js', 799627), ('./frontend/node_modules/rollup/dist/es/shared/watch.js', 131401), ('./frontend/node_modules/chai/chai.js', 359860), ('./frontend/node_modules/chai/lib/chai/core/assertions.js', 134747), ('./frontend/node_modules/vis-data/dist/umd.js', 423532), ('./frontend/node_modules/vis-data/dist/esm.js', 400902), ('./frontend/node_modules/vis-data/peer/esm/vis-data.js', 402307), ('./frontend/node_modules/vis-data/peer/esm/vis-data.min.js', 118268), ('./frontend/node_modules/vis-data/peer/umd/vis-data.js', 424739), ('./frontend/node_modules/vis-data/peer/umd/vis-data.min.js', 118504), ('./frontend/node_modules/vis-data/standalone/esm/vis-data.js', 402307), ('./frontend/node_modules/vis-data/standalone/esm/vis-data.min.js', 118268), ('./frontend/node_modules/vis-data/standalone/umd/vis-data.js', 424739), ('./frontend/node_modules/vis-data/standalone/umd/vis-data.min.js', 118504), ('./frontend/node_modules/showdown/dist/showdown.js', 159755), ('./frontend/node_modules/jsdom/lib/jsdom/living/generated/Document.js', 135897), ('./frontend/node_modules/jsdom/lib/jsdom/living/generated/Element.js', 123342), ('./frontend/node_modules/@babel/parser/lib/index.js', 484739), ('./frontend/node_modules/vis-util/peer/esm/vis-util.js', 349306), ('./frontend/node_modules/vis-util/peer/esm/vis-util.min.js', 110758), ('./frontend/node_modules/vis-util/peer/umd/vis-util.js', 360868), ('./frontend/node_modules/vis-util/peer/umd/vis-util.min.js', 110780), ('./frontend/node_modules/vis-util/standalone/esm/vis-util.js', 349306), ('./frontend/node_modules/vis-util/standalone/esm/vis-util.min.js', 110758), ('./frontend/node_modules/vis-util/standalone/umd/vis-util.js', 360868), ('./frontend/node_modules/vis-util/standalone/umd/vis-util.min.js', 110780), ('./frontend/node_modules/vis-util/esnext/esm/vis-util.js', 122256), ('./frontend/node_modules/vis-util/esnext/umd/vis-util.js', 131760), ('./frontend/node_modules/argparse/argparse.js', 129714), ('./frontend/node_modules/lodash/core.js', 115957), ('./frontend/node_modules/lodash/lodash.js', 544098), ('./frontend/node_modules/jiti/dist/babel.js', 1642537), ('./frontend/node_modules/jiti/dist/jiti.js', 259539), ('./frontend/node_modules/vite/dist/node/chunks/dep-CrWVpuYf.js', 330192), ('./frontend/node_modules/vite/dist/node/chunks/dep-Cb3N489L.js', 227411), ('./frontend/node_modules/vite/dist/node/chunks/dep-BBHrJRja.js', 2297990), ('./frontend/node_modules/vue/dist/vue.global.js', 519381), ('./frontend/node_modules/vue/dist/vue.runtime.global.js', 354311), ('./frontend/node_modules/vue/dist/vue.global.prod.js', 147534), ('./frontend/node_modules/vue/dist/vue.runtime.esm-browser.js', 328884), ('./frontend/node_modules/vue/dist/vue.esm-browser.prod.js', 150711), ('./frontend/node_modules/vue/dist/vue.esm-browser.js', 488104), ('./frontend/node_modules/@vuepic/vue-datepicker/dist/vue-datepicker.iife.js', 190710), ('./frontend/node_modules/@vuepic/vue-datepicker/dist/vue-datepicker.js', 192273), ('./frontend/node_modules/parse5/dist/cjs/tokenizer/index.js', 107434), ('./frontend/node_modules/parse5/dist/cjs/parser/index.js', 116660), ('./frontend/node_modules/parse5/dist/parser/index.js', 107124), ('./frontend/node_modules/date-fns/cdn.js', 237736), ('./frontend/node_modules/date-fns/fp/cdn.min.js', 102282), ('./frontend/node_modules/date-fns/fp/cdn.js', 260174), ('./frontend/node_modules/date-fns/locale/cdn.min.js', 799250), ('./frontend/node_modules/date-fns/locale/cdn.js', 1010783), ('./frontend/node_modules/decimal.js/decimal.js', 136673), ('./frontend/node_modules/@vueuse/core/index.iife.min.js', 103339), ('./frontend/node_modules/@vueuse/core/index.iife.js', 241515), ('./frontend/node_modules/prosemirror-model/dist/index.js', 121075), ('./frontend/node_modules/tailwindcss/peers/index.js', 4300666), ('./frontend/node_modules/tailwindcss/lib/corePlugins.js', 133828), ('./frontend/node_modules/socket.io-client/dist/socket.io.js', 154232), ('./frontend/node_modules/js-beautify/js/lib/beautify.js', 149856), ('./frontend/node_modules/js-beautify/js/lib/beautifier.min.js', 100072), ('./frontend/node_modules/js-beautify/js/lib/beautifier.js', 227925), ('./frontend/node_modules/js-beautify/js/lib/beautify-html.js', 114831)]",
+      "timestamp": "2025-07-09T01:17:32.490153",
+      "details": {}
+    },
+    {
+      "test_name": "No obvious memory issues",
+      "success": true,
+      "message": "",
+      "timestamp": "2025-07-09T01:17:32.503136",
+      "details": {}
+    }
+  ],
+  "errors": [
+    "File missing: planner/planner/api/__init__.py: ",
+    "File missing: planner/planner/api/timeline_data.py: ",
+    "File missing: planner/planner/api/roster.py: ",
+    "Failed to import API functions: No module named 'planner.planner.api'",
+    "Test file missing: planner/planner/tests/test_timeline_api.py: ",
+    "Failed to import configuration functions: No module named 'frappe'",
+    "Large files detected: Files over 100KB: [('./planner/public/frontend/assets/ui-CYUnyjvI.js', 645660), ('./frontend/node_modules/moment/moment.js', 176435), ('./frontend/node_modules/moment/dist/moment.js', 156326), ('./frontend/node_modules/moment/min/locales.min.js', 316025), ('./frontend/node_modules/moment/min/locales.js', 456892), ('./frontend/node_modules/moment/min/moment-with-locales.js', 632739), ('./frontend/node_modules/moment/min/moment-with-locales.min.js', 375055), ('./frontend/node_modules/@tiptap/core/dist/index.umd.js', 179410), ('./frontend/node_modules/@tiptap/core/dist/index.js', 167785), ('./frontend/node_modules/@vue/server-renderer/dist/server-renderer.esm-browser.js', 232366), ('./frontend/node_modules/@vue/test-utils/dist/vue-test-utils.esm-browser.js', 490509), ('./frontend/node_modules/@vue/test-utils/dist/vue-test-utils.browser.js', 338169), ('./frontend/node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js', 307840), ('./frontend/node_modules/@vue/compiler-dom/dist/compiler-dom.global.js', 202326), ('./frontend/node_modules/@vue/compiler-dom/dist/compiler-dom.esm-browser.js', 185474), ('./frontend/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js', 328462), ('./frontend/node_modules/@vue/runtime-dom/dist/runtime-dom.global.js', 353844), ('./frontend/node_modules/@vue/compiler-sfc/dist/compiler-sfc.esm-browser.js', 1580225), ('./frontend/node_modules/@vue/compiler-sfc/dist/compiler-sfc.cjs.js', 665076), ('./frontend/node_modules/@vue/compiler-core/dist/compiler-core.cjs.js', 195630), ('./frontend/node_modules/@vue/compiler-core/dist/compiler-core.cjs.prod.js', 190765), ('./frontend/node_modules/@vue/compiler-core/dist/compiler-core.esm-bundler.js', 169411), ('./frontend/node_modules/@vue/runtime-core/dist/runtime-core.cjs.prod.js', 186668), ('./frontend/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js', 242926), ('./frontend/node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js', 251052), ('./frontend/node_modules/prosemirror-view/dist/index.js', 235035), ('./frontend/node_modules/sortablejs/Sortable.js', 126600), ('./frontend/node_modules/sortablejs/modular/sortable.esm.js', 119797), ('./frontend/node_modules/sortablejs/modular/sortable.core.esm.js', 119797), ('./frontend/node_modules/sortablejs/modular/sortable.complete.esm.js', 119800), ('./frontend/node_modules/markdown-it/dist/index.cjs.js', 163051), ('./frontend/node_modules/markdown-it/dist/markdown-it.min.js', 123618), ('./frontend/node_modules/markdown-it/dist/markdown-it.js', 298975), ('./frontend/node_modules/vis-timeline/dist/vis-timeline-graph2d.esm.js', 1552089), ('./frontend/node_modules/vis-timeline/dist/vis-timeline-graph2d.min.js', 549643), ('./frontend/node_modules/vis-timeline/peer/esm/vis-timeline-graph2d.js', 1181759), ('./frontend/node_modules/vis-timeline/peer/esm/vis-timeline-graph2d.min.js', 426337), ('./frontend/node_modules/vis-timeline/peer/umd/vis-timeline-graph2d.js', 1215062), ('./frontend/node_modules/vis-timeline/peer/umd/vis-timeline-graph2d.min.js', 426659), ('./frontend/node_modules/vis-timeline/standalone/esm/vis-timeline-graph2d.js', 1580209), ('./frontend/node_modules/vis-timeline/standalone/esm/vis-timeline-graph2d.min.js', 568960), ('./frontend/node_modules/vis-timeline/standalone/umd/vis-timeline-graph2d.js', 1623709), ('./frontend/node_modules/vis-timeline/standalone/umd/vis-timeline-graph2d.min.js', 569230), ('./frontend/node_modules/vis-timeline/esnext/esm/vis-timeline-graph2d.js', 627941), ('./frontend/node_modules/vis-timeline/esnext/esm/vis-timeline-graph2d.min.js', 253789), ('./frontend/node_modules/vis-timeline/esnext/umd/vis-timeline-graph2d.js', 646504), ('./frontend/node_modules/vis-timeline/esnext/umd/vis-timeline-graph2d.min.js', 254528), ('./frontend/node_modules/vee-validate/dist/vee-validate.js', 134819), ('./frontend/node_modules/vee-validate/dist/vee-validate.esm.js', 137848), ('./frontend/node_modules/@asamuzakjp/css-color/dist/browser/css-color.min.js', 190509), ('./frontend/node_modules/vue-router/dist/vue-router.global.js', 158601), ('./frontend/node_modules/vue-router/dist/vue-router.esm-browser.js', 145236), ('./frontend/node_modules/vitest/dist/vendor/index.xL8XjTLv.js', 100749), ('./frontend/node_modules/vitest/dist/vendor/vi.YFlodzP_.js', 114357), ('./frontend/node_modules/vitest/dist/vendor/index.-xs08BYx.js', 196463), ('./frontend/node_modules/vitest/dist/vendor/cli-api.OdDWuB7Y.js', 557541), ('./frontend/node_modules/vue-draggable-next/dist/vue-draggable-next.global.js', 110738), ('./frontend/node_modules/vue-draggable-next/dist/vue-draggable-next.cjs.js', 104920), ('./frontend/node_modules/vue-draggable-next/dist/vue-draggable-next.esm-browser.js', 104843), ('./frontend/node_modules/vue-draggable-next/dist/vue-draggable-next.esm-bundler.js', 104843), ('./frontend/node_modules/vue-draggable-next/dist/vue-draggable-next.cjs.prod.js', 104920), ('./frontend/node_modules/psl/data/rules.js', 181684), ('./frontend/node_modules/feather-icons/dist/feather.js', 158902), ('./frontend/node_modules/acorn/dist/acorn.js', 238400), ('./frontend/node_modules/rollup/dist/shared/index.js', 121656), ('./frontend/node_modules/rollup/dist/shared/rollup.js', 800017), ('./frontend/node_modules/rollup/dist/es/shared/node-entry.js', 799627), ('./frontend/node_modules/rollup/dist/es/shared/watch.js', 131401), ('./frontend/node_modules/chai/chai.js', 359860), ('./frontend/node_modules/chai/lib/chai/core/assertions.js', 134747), ('./frontend/node_modules/vis-data/dist/umd.js', 423532), ('./frontend/node_modules/vis-data/dist/esm.js', 400902), ('./frontend/node_modules/vis-data/peer/esm/vis-data.js', 402307), ('./frontend/node_modules/vis-data/peer/esm/vis-data.min.js', 118268), ('./frontend/node_modules/vis-data/peer/umd/vis-data.js', 424739), ('./frontend/node_modules/vis-data/peer/umd/vis-data.min.js', 118504), ('./frontend/node_modules/vis-data/standalone/esm/vis-data.js', 402307), ('./frontend/node_modules/vis-data/standalone/esm/vis-data.min.js', 118268), ('./frontend/node_modules/vis-data/standalone/umd/vis-data.js', 424739), ('./frontend/node_modules/vis-data/standalone/umd/vis-data.min.js', 118504), ('./frontend/node_modules/showdown/dist/showdown.js', 159755), ('./frontend/node_modules/jsdom/lib/jsdom/living/generated/Document.js', 135897), ('./frontend/node_modules/jsdom/lib/jsdom/living/generated/Element.js', 123342), ('./frontend/node_modules/@babel/parser/lib/index.js', 484739), ('./frontend/node_modules/vis-util/peer/esm/vis-util.js', 349306), ('./frontend/node_modules/vis-util/peer/esm/vis-util.min.js', 110758), ('./frontend/node_modules/vis-util/peer/umd/vis-util.js', 360868), ('./frontend/node_modules/vis-util/peer/umd/vis-util.min.js', 110780), ('./frontend/node_modules/vis-util/standalone/esm/vis-util.js', 349306), ('./frontend/node_modules/vis-util/standalone/esm/vis-util.min.js', 110758), ('./frontend/node_modules/vis-util/standalone/umd/vis-util.js', 360868), ('./frontend/node_modules/vis-util/standalone/umd/vis-util.min.js', 110780), ('./frontend/node_modules/vis-util/esnext/esm/vis-util.js', 122256), ('./frontend/node_modules/vis-util/esnext/umd/vis-util.js', 131760), ('./frontend/node_modules/argparse/argparse.js', 129714), ('./frontend/node_modules/lodash/core.js', 115957), ('./frontend/node_modules/lodash/lodash.js', 544098), ('./frontend/node_modules/jiti/dist/babel.js', 1642537), ('./frontend/node_modules/jiti/dist/jiti.js', 259539), ('./frontend/node_modules/vite/dist/node/chunks/dep-CrWVpuYf.js', 330192), ('./frontend/node_modules/vite/dist/node/chunks/dep-Cb3N489L.js', 227411), ('./frontend/node_modules/vite/dist/node/chunks/dep-BBHrJRja.js', 2297990), ('./frontend/node_modules/vue/dist/vue.global.js', 519381), ('./frontend/node_modules/vue/dist/vue.runtime.global.js', 354311), ('./frontend/node_modules/vue/dist/vue.global.prod.js', 147534), ('./frontend/node_modules/vue/dist/vue.runtime.esm-browser.js', 328884), ('./frontend/node_modules/vue/dist/vue.esm-browser.prod.js', 150711), ('./frontend/node_modules/vue/dist/vue.esm-browser.js', 488104), ('./frontend/node_modules/@vuepic/vue-datepicker/dist/vue-datepicker.iife.js', 190710), ('./frontend/node_modules/@vuepic/vue-datepicker/dist/vue-datepicker.js', 192273), ('./frontend/node_modules/parse5/dist/cjs/tokenizer/index.js', 107434), ('./frontend/node_modules/parse5/dist/cjs/parser/index.js', 116660), ('./frontend/node_modules/parse5/dist/parser/index.js', 107124), ('./frontend/node_modules/date-fns/cdn.js', 237736), ('./frontend/node_modules/date-fns/fp/cdn.min.js', 102282), ('./frontend/node_modules/date-fns/fp/cdn.js', 260174), ('./frontend/node_modules/date-fns/locale/cdn.min.js', 799250), ('./frontend/node_modules/date-fns/locale/cdn.js', 1010783), ('./frontend/node_modules/decimal.js/decimal.js', 136673), ('./frontend/node_modules/@vueuse/core/index.iife.min.js', 103339), ('./frontend/node_modules/@vueuse/core/index.iife.js', 241515), ('./frontend/node_modules/prosemirror-model/dist/index.js', 121075), ('./frontend/node_modules/tailwindcss/peers/index.js', 4300666), ('./frontend/node_modules/tailwindcss/lib/corePlugins.js', 133828), ('./frontend/node_modules/socket.io-client/dist/socket.io.js', 154232), ('./frontend/node_modules/js-beautify/js/lib/beautify.js', 149856), ('./frontend/node_modules/js-beautify/js/lib/beautifier.min.js', 100072), ('./frontend/node_modules/js-beautify/js/lib/beautifier.js', 227925), ('./frontend/node_modules/js-beautify/js/lib/beautify-html.js', 114831)]",
+    "Security issues found: Issues: ['./validate_timeline_system.py: Uses eval()', './validate_timeline_system.py: Uses exec()']"
+  ],
+  "warnings": [],
+  "summary": {
+    "total_tests": 27,
+    "passed_tests": 19,
+    "failed_tests": 8,
+    "success_rate": 70.37037037037037,
+    "duration": "0:00:00.328521",
+    "timestamp": "2025-07-09T01:17:32.615553"
+  }
+}

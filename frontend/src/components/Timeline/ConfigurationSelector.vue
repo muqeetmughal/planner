@@ -13,22 +13,31 @@
     <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center py-12">
       <div class="flex items-center gap-3">
-        <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <span class="text-gray-600 dark:text-gray-400">Loading configurations...</span>
+        <div
+          class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"
+        ></div>
+        <span class="text-gray-600 dark:text-gray-400"
+          >Loading configurations...</span
+        >
       </div>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+    <div
+      v-else-if="error"
+      class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+    >
       <div class="flex items-center gap-2">
         <FeatherIcon name="alert-circle" class="w-5 h-5 text-red-500" />
-        <span class="text-red-700 dark:text-red-400 font-medium">Error loading configurations</span>
+        <span class="text-red-700 dark:text-red-400 font-medium"
+          >Error loading configurations</span
+        >
       </div>
       <p class="text-red-600 dark:text-red-300 text-sm mt-1">{{ error }}</p>
-      <Button 
-        variant="outline" 
-        theme="red" 
-        size="sm" 
+      <Button
+        variant="outline"
+        theme="red"
+        size="sm"
         class="mt-3"
         @click="loadConfigurations"
       >
@@ -39,7 +48,9 @@
 
     <!-- Empty State -->
     <div v-else-if="configurations.length === 0" class="text-center py-12">
-      <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div
+        class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+      >
         <FeatherIcon name="calendar" class="w-8 h-8 text-gray-400" />
       </div>
       <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -48,8 +59,8 @@
       <p class="text-gray-600 dark:text-gray-400 mb-4">
         Create a timeline configuration to get started
       </p>
-      <Button 
-        variant="solid" 
+      <Button
+        variant="solid"
         theme="blue"
         @click="createSampleConfiguration"
         :loading="creatingSample"
@@ -70,11 +81,15 @@
         <!-- Card Header -->
         <div class="flex items-start justify-between mb-4">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+            <div
+              class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
+            >
               <FeatherIcon name="grid" class="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <h3
+                class="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+              >
                 {{ config.configuration_name }}
               </h3>
               <div class="flex items-center gap-2 mt-1">
@@ -84,41 +99,52 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Arrow Icon -->
-          <FeatherIcon 
-            name="arrow-right" 
-            class="w-5 h-5 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-200" 
+          <FeatherIcon
+            name="arrow-right"
+            class="w-5 h-5 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-200"
           />
         </div>
 
         <!-- Description -->
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-          {{ config.description || `Timeline view showing ${config.block_doctype} blocks organized by ${config.row_doctype}` }}
+          {{
+            config.description ||
+            `Timeline view showing ${config.block_doctype} blocks organized by ${config.row_doctype}`
+          }}
         </p>
 
         <!-- Configuration Details -->
         <div class="space-y-2">
-          <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <div
+            class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
+          >
             <FeatherIcon name="layers" class="w-3 h-3" />
             <span>Rows: {{ config.row_doctype }}</span>
           </div>
-          <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <div
+            class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
+          >
             <FeatherIcon name="square" class="w-3 h-3" />
             <span>Blocks: {{ config.block_doctype }}</span>
           </div>
         </div>
 
         <!-- Hover Effect -->
-        <div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"></div>
+        <div
+          class="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+        ></div>
       </div>
     </div>
 
     <!-- Action Buttons -->
-    <div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+    <div
+      class="flex items-center justify-between mt-8 pt-6 border-t border-gray-200 dark:border-gray-700"
+    >
       <div class="flex items-center gap-3">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           theme="gray"
           @click="loadConfigurations"
           :loading="loading"
@@ -126,9 +152,9 @@
           <FeatherIcon name="refresh-cw" class="w-4 h-4 mr-2" />
           Refresh
         </Button>
-        
-        <Button 
-          variant="outline" 
+
+        <Button
+          variant="outline"
           theme="blue"
           @click="createSampleConfiguration"
           :loading="creatingSample"
@@ -139,80 +165,82 @@
       </div>
 
       <div class="text-sm text-gray-500 dark:text-gray-400">
-        {{ configurations.length }} configuration{{ configurations.length !== 1 ? 's' : '' }} available
+        {{ configurations.length }} configuration{{
+          configurations.length !== 1 ? "s" : ""
+        }}
+        available
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { Button, FeatherIcon } from 'frappe-ui'
-import { call } from 'frappe-ui'
+import { ref, onMounted } from "vue";
+import { Button, FeatherIcon } from "frappe-ui";
+import { call } from "frappe-ui";
+import { toast } from "../../composables/useToast";
 
-const emit = defineEmits(['configurationSelected'])
+const emit = defineEmits(["configurationSelected"]);
 
 // Reactive state
-const configurations = ref([])
-const loading = ref(false)
-const error = ref(null)
-const creatingSample = ref(false)
+const configurations = ref([]);
+const loading = ref(false);
+const error = ref(null);
+const creatingSample = ref(false);
 
 // Methods
 const loadConfigurations = async () => {
-  loading.value = true
-  error.value = null
-  
+  loading.value = true;
+  error.value = null;
+
   try {
-    const response = await call('planner.planner.doctype.timeline_configuration.timeline_configuration.get_available_configurations')
-    configurations.value = response || []
+    const response = await call("planner.api.get_timeline_configurations");
+    configurations.value = response || [];
   } catch (err) {
-    error.value = err.message || 'Failed to load configurations'
-    console.error('Error loading configurations:', err)
+    error.value = err.message || "Failed to load configurations";
+    console.error("Error loading configurations:", err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const selectConfiguration = (config) => {
-  emit('configurationSelected', config)
-}
+  emit("configurationSelected", config);
+};
 
 const createSampleConfiguration = async () => {
-  creatingSample.value = true
-  
+  creatingSample.value = true;
+
   try {
-    const response = await call('planner.planner.doctype.timeline_configuration.timeline_configuration.setup_sample_configurations')
-    
+    const response = await call(
+      "planner.api.create_sample_workstation_configuration",
+    );
+
     if (response.success) {
       // Reload configurations to show the new one
-      await loadConfigurations()
-      
+      await loadConfigurations();
+
       // Show success message
-      frappe.show_alert({
-        message: 'Sample configuration created successfully!',
-        indicator: 'green'
-      })
+      toast.success("Sample configuration created successfully!");
     } else {
-      throw new Error(response.error || 'Failed to create sample configuration')
+      throw new Error(
+        response.error || "Failed to create sample configuration",
+      );
     }
   } catch (err) {
-    error.value = err.message || 'Failed to create sample configuration'
-    console.error('Error creating sample configuration:', err)
-    
-    frappe.show_alert({
-      message: 'Failed to create sample configuration',
-      indicator: 'red'
-    })
+    error.value = err.message || "Failed to create sample configuration";
+    console.error("Error creating sample configuration:", err);
+
+    toast.error("Failed to create sample configuration: " + err.message);
   } finally {
-    creatingSample.value = false
+    creatingSample.value = false;
   }
-}
+};
 
 // Initialize
 onMounted(() => {
-  loadConfigurations()
-})
+  loadConfigurations();
+});
 </script>
 
 <style scoped>
@@ -225,7 +253,7 @@ onMounted(() => {
 }
 
 .configuration-card::before {
-  content: '';
+  content: "";
   @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent;
   transform: translateX(-100%);
   transition: transform 0.6s ease;
@@ -244,7 +272,8 @@ onMounted(() => {
 
 /* Animation for loading state */
 @keyframes pulse-subtle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -261,7 +290,7 @@ onMounted(() => {
   .configuration-selector {
     @apply p-4;
   }
-  
+
   .configuration-card {
     @apply p-4;
   }

@@ -1,50 +1,42 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { session } from '../data/session'
-import { users } from '../data/users'
-import { getScrollContainer, scrollTo } from '../utils/scrollContainer'
+import { session } from "../data/session";
+import { users } from "../data/users";
+import { getScrollContainer, scrollTo } from "../utils/scrollContainer";
 
-const Dashboard = () => import("@/pages/Dashboard.vue");
+const ConfigurationSelector = () => import("@/pages/DynamicTimelinePage.vue");
 
 const routes = [
   {
     path: "/",
-    name: "DynamicTimeline",
-    component: () => import("@/pages/DynamicTimelinePage.vue"),
+    name: "ConfigurationSelector",
+    component: ConfigurationSelector,
     meta: {
-      requiresAuth: true
-    }
-  },
-  {
-    path: "/dashboard",
-    name: "Dashboard",
-    component: () => import("@/pages/Dashboard.vue"),
-    meta: {
-      requiresAuth: true
-    }
+      requiresAuth: true,
+    },
   },
   {
     path: "/planner/:dashboardName/:department",
     name: "Planner",
-    component: () => import("@/pages/PlannerEnhanced.vue"),
+    component: () => import("@/pages/PlannerRoster.vue"),
     meta: {
-      requiresAuth: true
-    }
+      requiresAuth: true,
+    },
   },
   {
     path: "/planner-enhanced/:dashboardName/:department",
     name: "PlannerEnhanced",
-    component: () => import("@/pages/PlannerEnhanced.vue"),
+    component: () => import("@/pages/PlannerRoster.vue"),
     meta: {
-      requiresAuth: true
-    }
+      requiresAuth: true,
+    },
   },
   {
     path: "/planner-roster/:dashboardName/:department?",
     name: "PlannerRoster",
     component: () => import("@/pages/PlannerRoster.vue"),
     meta: {
-      requiresAuth: true
-    }
+      requiresAuth: true,
+    },
   },
   {
     path: "/login",
@@ -54,49 +46,47 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory('/frontend'),
+  history: createWebHistory("/frontend"),
   routes,
   scrollBehavior(to, from, savedPosition) {
     return {
       top: 0,
-      behavior: 'instant'
-    }
+      behavior: "instant",
+    };
   },
 });
 
-let scrollPositions = {}
+let scrollPositions = {};
 function saveAndRestoreScrollPosition(to, from) {
-  let scrollContainer = getScrollContainer()
+  let scrollContainer = getScrollContainer();
   if (scrollContainer) {
-    scrollPositions[from.path] = scrollContainer.scrollTop
+    scrollPositions[from.path] = scrollContainer.scrollTop;
   }
   if (scrollPositions[to.path] !== undefined && to.path !== from.path) {
     setTimeout(() => {
-      scrollTo({ top: scrollPositions[to.path] })
-    }, 0)
+      scrollTo({ top: scrollPositions[to.path] });
+    }, 0);
   }
 }
 
 router.beforeEach(async (to, from, next) => {
+  saveAndRestoreScrollPosition(to, from);
 
-  saveAndRestoreScrollPosition(to, from)
-
-  let isLoggedIn = session.isLoggedIn
-  console.log("isloggedin", isLoggedIn)
+  let isLoggedIn = session.isLoggedIn;
+  console.log("isloggedin", isLoggedIn);
   try {
-    await users.promise
+    await users.promise;
   } catch (error) {
-    isLoggedIn = false
+    isLoggedIn = false;
   }
 
-  if (to.name === 'Login' && isLoggedIn) {
-    next({ name: 'DynamicTimeline' })
-  } else if (to.name !== 'Login' && !isLoggedIn) {
-    next({ name: 'Login' })
+  if (to.name === "Login" && isLoggedIn) {
+    next({ name: "ConfigurationSelector" });
+  } else if (to.name !== "Login" && !isLoggedIn) {
+    next({ name: "Login" });
   } else {
-    next()
+    next();
   }
-})
-
+});
 
 export default router;

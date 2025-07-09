@@ -17,7 +17,10 @@ def get_timeline_data(configuration_name, start_date=None, end_date=None, filter
 
 		# Parse filters
 		if isinstance(filters, str):
-			filters = json.loads(filters) if filters else {}
+			try:
+				filters = json.loads(filters) if filters else {}
+			except:
+				filters = {}
 		elif not filters:
 			filters = {}
 
@@ -28,10 +31,10 @@ def get_timeline_data(configuration_name, start_date=None, end_date=None, filter
 			end_date = add_days(start_date, 30)  # Default 30-day range
 
 		# Get row entities (e.g., Workstations)
-		rows = get_row_entities(config, filters)
+		rows = get_timeline_row_entities(config, filters)
 
 		# Get block entities (e.g., Work Orders)
-		blocks = get_block_entities(config, start_date, end_date, filters)
+		blocks = get_timeline_block_entities(config, start_date, end_date, filters)
 
 		return {
 			"success": True,
@@ -72,7 +75,7 @@ def get_timeline_data(configuration_name, start_date=None, end_date=None, filter
 			"config": None
 		}
 
-def get_row_entities(config, filters=None):
+def get_timeline_row_entities(config, filters=None):
 	"""Get row entities based on configuration"""
 	try:
 		# Build filters for row doctype
@@ -124,7 +127,7 @@ def get_row_entities(config, filters=None):
 		frappe.log_error(f"Error getting row entities: {str(e)}", "Timeline Row Entities Error")
 		return []
 
-def get_block_entities(config, start_date, end_date, filters=None):
+def get_timeline_block_entities(config, start_date, end_date, filters=None):
 	"""Get block entities based on configuration and date range"""
 	try:
 		# Build filters for block doctype
@@ -302,8 +305,13 @@ def update_block_assignment(block_doctype, block_name, new_row_assignment, new_d
 def get_timeline_configurations():
 	"""Get available timeline configurations for selection"""
 	try:
-		from planner.planner.doctype.timeline_configuration.timeline_configuration import get_available_configurations
-		return get_available_configurations()
+		configurations = frappe.get_all(
+			"Timeline Configuration",
+			filters={"is_active": 1},
+			fields=["name", "configuration_name", "description", "row_doctype", "block_doctype"],
+			order_by="configuration_name"
+		)
+		return configurations
 	except Exception as e:
 		frappe.log_error(frappe.get_traceback(), "Get Timeline Configurations Error")
 		return []
