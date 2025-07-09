@@ -144,6 +144,30 @@
             </button>
           </div>
 
+          <!-- Unassigned Panel Toggle -->
+          <Button
+            variant="ghost"
+            theme="gray"
+            size="sm"
+            @click="toggleUnassignedPanel"
+            :class="[
+              'group rounded-xl transition-all duration-300 p-3',
+              showUnassignedPanel
+                ? 'bg-amber-50 dark:bg-amber-900/30'
+                : 'hover:bg-amber-50 dark:hover:bg-amber-900/30',
+            ]"
+          >
+            <FeatherIcon
+              name="inbox"
+              :class="[
+                'w-4 h-4 transition-all duration-300',
+                showUnassignedPanel
+                  ? 'text-amber-600'
+                  : 'group-hover:text-amber-600',
+              ]"
+            />
+          </Button>
+
           <!-- Enhanced Refresh Button -->
           <Button
             variant="ghost"
@@ -319,9 +343,12 @@
           :blocks="blocks"
           :dateColumns="dateColumns"
           :loading="loading"
+          :showUnassignedPanel="showUnassignedPanel"
           @blockMove="handleBlockMove"
           @blockClick="handleBlockClick"
           @addBlock="handleAddBlock"
+          @assignTask="handleAssignTask"
+          @toggleUnassignedPanel="toggleUnassignedPanel"
           class="enhanced-grid"
         />
       </div>
@@ -435,12 +462,115 @@
         </Transition>
       </div>
     </div>
+
+    <!-- Add Block Dialog -->
+    <Dialog
+      v-model="showAddBlockDialog"
+      :options="{
+        title: 'Add New Block',
+        size: 'large',
+        primaryAction: {
+          label: 'Create Block',
+          onClick: handleCreateBlock,
+        },
+        secondaryAction: {
+          label: 'Cancel',
+          onClick: () => (showAddBlockDialog = false),
+        },
+      }"
+    >
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Title
+            </label>
+            <input
+              v-model="newBlockForm.title"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter block title"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Priority
+            </label>
+            <select
+              v-model="newBlockForm.priority"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Description
+          </label>
+          <textarea
+            v-model="newBlockForm.description"
+            rows="3"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter block description"
+          ></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Start Date
+            </label>
+            <input
+              v-model="newBlockForm.start_date"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              End Date
+            </label>
+            <input
+              v-model="newBlockForm.end_date"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Duration (hours)
+          </label>
+          <input
+            v-model.number="newBlockForm.duration"
+            type="number"
+            min="1"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter duration in hours"
+          />
+        </div>
+      </div>
+    </Dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
-import { Button, FeatherIcon } from "frappe-ui";
+import { Button, FeatherIcon, Dialog } from "frappe-ui";
 import { call } from "frappe-ui";
 import DynamicTimelineGrid from "./DynamicTimelineGrid.vue";
 import DynamicBlockDetails from "./DynamicBlockDetails.vue";
@@ -463,10 +593,21 @@ const loading = ref(false);
 const error = ref(null);
 const selectedBlock = ref(null);
 const showQuickActions = ref(false);
+const showAddBlockDialog = ref(false);
+const addBlockData = ref(null);
+const showUnassignedPanel = ref(true);
 
 // View state
 const currentViewMode = ref("week");
 const currentDate = ref(new Date());
+const newBlockForm = ref({
+  title: "",
+  description: "",
+  priority: "Medium",
+  start_date: "",
+  end_date: "",
+  duration: 1,
+});
 
 // Constants
 const viewModes = [
@@ -652,7 +793,9 @@ const handleBlockClick = (blockId) => {
 };
 
 const handleAddBlock = (data) => {
-  console.log("Add block:", data);
+  // Show add block dialog or form
+  showAddBlockDialog.value = true;
+  addBlockData.value = data;
 };
 
 const handleBlockUpdate = async (data) => {
@@ -667,6 +810,96 @@ const handleBlockUpdate = async (data) => {
 
 const closeBlockDetails = () => {
   selectedBlock.value = null;
+};
+
+const handleCreateBlock = async () => {
+  try {
+    if (!newBlockForm.value.title.trim()) {
+      toast({
+        title: "Error",
+        text: "Please enter a block title",
+        icon: "x",
+        iconClasses: "text-red-600",
+      });
+      return;
+    }
+
+    const blockData = {
+      ...newBlockForm.value,
+      row_id: addBlockData.value?.rowId,
+      date: addBlockData.value?.date,
+      doctype: config.value.block_doctype,
+    };
+
+    await call("planner.api.create_block", blockData);
+
+    // Reset form
+    newBlockForm.value = {
+      title: "",
+      description: "",
+      priority: "Medium",
+      start_date: "",
+      end_date: "",
+      duration: 1,
+    };
+
+    showAddBlockDialog.value = false;
+    addBlockData.value = null;
+
+    // Refresh data
+    await refreshData();
+
+    toast({
+      title: "Success",
+      text: "Block created successfully",
+      icon: "check",
+      iconClasses: "text-green-600",
+    });
+  } catch (error) {
+    console.error("Error creating block:", error);
+    toast({
+      title: "Error",
+      text: "Failed to create block",
+      icon: "x",
+      iconClasses: "text-red-600",
+    });
+  }
+};
+
+const handleAssignTask = async (data) => {
+  try {
+    const { taskId, rowId, date, taskData } = data;
+
+    // Update the task to assign it to the row and date
+    await call("planner.api.assign_task", {
+      task_id: taskId,
+      row_id: rowId,
+      date: date,
+      task_data: taskData,
+    });
+
+    // Refresh data to show the updated assignment
+    await refreshData();
+
+    toast({
+      title: "Success",
+      text: "Task assigned successfully",
+      icon: "check",
+      iconClasses: "text-green-600",
+    });
+  } catch (error) {
+    console.error("Error assigning task:", error);
+    toast({
+      title: "Error",
+      text: "Failed to assign task",
+      icon: "x",
+      iconClasses: "text-red-600",
+    });
+  }
+};
+
+const toggleUnassignedPanel = () => {
+  showUnassignedPanel.value = !showUnassignedPanel.value;
 };
 
 // Watch for configuration changes
