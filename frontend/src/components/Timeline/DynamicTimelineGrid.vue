@@ -1,12 +1,15 @@
 <template>
-  <div class="dynamic-timeline-grid">
+  <div
+    class="dynamic-timeline-grid rounded-lg border overflow-auto max-h-[45rem]"
+    :class="loading && 'animate-pulse pointer-events-none'"
+  >
     <!-- Enhanced Header with Search and Filters -->
     <div
       class="grid-header bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30"
     >
-      <div class="p-4">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-4">
+      <div class="p-3">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-3">
             <!-- Row Search -->
             <div class="relative">
               <FeatherIcon
@@ -16,8 +19,8 @@
               <input
                 v-model="rowSearch"
                 type="text"
-                placeholder="Search rows..."
-                class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Search resources..."
+                class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
               />
             </div>
 
@@ -28,7 +31,7 @@
                 :key="mode.value"
                 @click="currentViewMode = mode.value"
                 :class="[
-                  'px-3 py-1 rounded-md text-sm font-medium transition-all duration-200',
+                  'px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center',
                   currentViewMode === mode.value
                     ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
@@ -40,21 +43,21 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-3">
             <!-- Legend -->
             <div
-              class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400"
+              class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mr-2"
             >
-              <div class="flex items-center gap-1">
-                <div class="w-3 h-3 bg-blue-500 rounded"></div>
+              <div class="flex items-center gap-1.5">
+                <div class="w-3 h-3 bg-blue-500 rounded shadow-sm"></div>
                 <span>Active</span>
               </div>
-              <div class="flex items-center gap-1">
-                <div class="w-3 h-3 bg-amber-500 rounded"></div>
+              <div class="flex items-center gap-1.5">
+                <div class="w-3 h-3 bg-amber-500 rounded shadow-sm"></div>
                 <span>Pending</span>
               </div>
-              <div class="flex items-center gap-1">
-                <div class="w-3 h-3 bg-green-500 rounded"></div>
+              <div class="flex items-center gap-1.5">
+                <div class="w-3 h-3 bg-green-500 rounded shadow-sm"></div>
                 <span>Completed</span>
               </div>
             </div>
@@ -77,7 +80,7 @@
 
         <!-- Timeline Navigation -->
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
             <Button
               variant="ghost"
               theme="gray"
@@ -87,7 +90,7 @@
               <FeatherIcon name="chevron-left" class="w-4 h-4" />
             </Button>
             <div
-              class="px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg font-medium text-sm"
+              class="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 rounded-lg font-medium text-sm"
             >
               {{ formatDateRange() }}
             </div>
@@ -111,205 +114,190 @@
       </div>
     </div>
 
-    <!-- Main Grid Container -->
-    <div class="grid-container" ref="gridContainer">
-      <div class="grid-wrapper">
-        <!-- Fixed Row Header -->
-        <div
-          class="row-header bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700"
-        >
-          <!-- Header Cell -->
-          <div
-            class="header-cell p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
-          >
+    <!-- Enhanced Table Structure -->
+    <table class="border-separate border-spacing-0 w-full">
+      <thead>
+        <tr class="sticky top-0 bg-white dark:bg-gray-900 z-20">
+          <!-- Resource Header -->
+          <th class="resource-header-cell p-3 border-b border-gray-200 dark:border-gray-700 text-left bg-gray-50 dark:bg-gray-800">
             <div class="font-semibold text-sm text-gray-900 dark:text-white">
               {{ config?.row_doctype || "Resources" }}
             </div>
-          </div>
+          </th>
 
-          <!-- Row Cells -->
-          <div class="row-cells" :style="{ height: `${gridHeight}px` }">
-            <div
-              v-for="(row, index) in filteredRows"
-              :key="row.id"
-              :class="[
-                'row-cell p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3',
-                'hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer',
-                selectedRow === row.id
-                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700'
-                  : '',
-              ]"
-              :style="{ height: `${rowHeight}px` }"
-              @click="selectRow(row.id)"
-            >
-              <!-- Row Avatar -->
+          <!-- Date Header Columns -->
+          <th
+            v-for="(column, idx) in visibleDateColumns"
+            :key="column.key"
+            :class="[
+              'date-header-cell font-medium border-b border-gray-200 dark:border-gray-700 text-center',
+              { 'border-l border-gray-200 dark:border-gray-700': idx > 0 },
+              column.isToday ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-gray-50 dark:bg-gray-800',
+              column.isWeekend ? 'bg-amber-50 dark:bg-amber-900/20' : ''
+            ]"
+          >
+            <div class="p-2">
+              <div class="font-semibold text-sm text-gray-900 dark:text-white">
+                {{ column.label }}
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {{ column.sublabel }}
+              </div>
               <div
-                class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm"
-              >
-                {{ getRowInitials(row) }}
+                v-if="column.isToday"
+                class="w-2 h-2 bg-blue-500 rounded-full mx-auto mt-1"
+              ></div>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr 
+          v-for="(row, rowIdx) in filteredRows" 
+          :key="row.id"
+          :class="[
+            'hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group',
+            selectedRow === row.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+          ]"
+        >
+          <!-- Resource Column -->
+          <td
+            :class="[
+              'resource-cell px-3 py-4 z-[5] cursor-pointer',
+              { 'border-t border-gray-200 dark:border-gray-700': rowIdx > 0 }
+            ]"
+            @click="selectRow(row.id)"
+          >
+            <div class="flex items-center gap-3">
+              <!-- Enhanced Avatar with better design -->
+              <div class="relative">
+                <div
+                  class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg group-hover:shadow-xl transition-shadow duration-200"
+                >
+                  {{ getRowInitials(row) }}
+                </div>
+                <!-- Status indicator -->
+                <div 
+                  v-if="getRowBlockCount(row.id) > 0"
+                  class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full flex items-center justify-center"
+                >
+                  <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+                </div>
               </div>
 
-              <!-- Row Info -->
+              <!-- Enhanced Row Info -->
               <div class="flex-1 min-w-0">
-                <div class="font-medium text-gray-900 dark:text-white truncate">
+                <div class="font-semibold text-base text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {{ getRowTitle(row) }}
                 </div>
-                <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                <div class="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
                   {{ getRowSubtitle(row) }}
                 </div>
-                <div class="flex items-center gap-2 mt-1">
+                <div class="flex items-center gap-2 mt-2">
                   <div
-                    class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full"
+                    class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full font-medium"
                   >
                     {{ getRowBlockCount(row.id) }} items
                   </div>
                   <div
-                    v-if="getRowWorkload(row.id)"
-                    class="text-xs text-blue-600 dark:text-blue-400 font-medium"
+                    v-if="getRowWorkload(row.id) > 0"
+                    :class="[
+                      'text-xs px-2 py-1 rounded-full font-medium',
+                      getRowWorkload(row.id) > 80 
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400' 
+                        : getRowWorkload(row.id) > 60 
+                        ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' 
+                        : 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                    ]"
                   >
                     {{ getRowWorkload(row.id) }}% capacity
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </td>
 
-        <!-- Scrollable Timeline Grid -->
-        <div class="timeline-grid" ref="timelineGrid" @scroll="handleScroll">
-          <!-- Date Header -->
-          <div
-            class="date-header bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20"
+          <!-- Timeline Cells -->
+          <td
+            v-for="(column, colIdx) in visibleDateColumns"
+            :key="`${row.id}-${column.key}`"
+            :class="[
+              'timeline-cell p-1.5 relative align-top',
+              { 'border-l border-gray-200 dark:border-gray-700': colIdx > 0 },
+              { 'border-t border-gray-200 dark:border-gray-700': rowIdx > 0 },
+              'hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200',
+              column.isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : '',
+              column.isWeekend ? 'bg-amber-50/30 dark:bg-amber-900/10' : '',
+              dragOverCell === `${row.id}-${column.key}` 
+                ? 'bg-green-100 dark:bg-green-900/20 ring-2 ring-green-500/50 ring-inset shadow-lg transform scale-105' 
+                : '',
+              hoveredCell.row === row.id && hoveredCell.date === column.key 
+                ? 'bg-gray-100 dark:bg-gray-800/50' 
+                : ''
+            ]"
+            @mouseenter="handleCellHover(row.id, column.key, true)"
+            @mouseleave="handleCellHover(row.id, column.key, false)"
+            @drop="handleDrop($event, row.id, column.key)"
+            @dragover.prevent="handleDragOver($event, row.id, column.key)"
+            @dragenter.prevent="handleDragEnter($event, row.id, column.key)"
+            @dragleave="handleDragLeave($event)"
+            @click="handleCellClick(row.id, column.key)"
           >
-            <div class="date-columns flex">
-              <div
-                v-for="column in visibleDateColumns"
-                :key="column.key"
-                :class="[
-                  'date-column border-r border-gray-200 dark:border-gray-700 p-3 text-center',
-                  column.isToday
-                    ? 'bg-blue-50 dark:bg-blue-900/20'
-                    : 'bg-gray-50 dark:bg-gray-800',
-                  column.isWeekend ? 'bg-amber-50 dark:bg-amber-900/20' : '',
-                ]"
-                :style="{
-                  width: `${columnWidth}px`,
-                  minWidth: `${columnWidth}px`,
-                }"
-              >
-                <div
-                  class="font-semibold text-sm text-gray-900 dark:text-white"
-                >
-                  {{ column.label }}
-                </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {{ column.sublabel }}
-                </div>
-                <div
-                  v-if="column.isToday"
-                  class="w-2 h-2 bg-blue-500 rounded-full mx-auto mt-1"
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Timeline Rows -->
-          <div class="timeline-rows" :style="{ height: `${gridHeight}px` }">
+            <!-- Today Indicator -->
             <div
-              v-for="(row, rowIndex) in filteredRows"
-              :key="row.id"
-              class="timeline-row border-b border-gray-200 dark:border-gray-700"
-              :style="{ height: `${rowHeight}px` }"
+              v-if="column.isToday"
+              class="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 shadow-sm z-10"
+            ></div>
+
+            <!-- Enhanced Drop Zone with better visual feedback -->
+            <div
+              v-if="dragOverCell === `${row.id}-${column.key}`"
+              class="absolute inset-0 border-2 border-dashed border-green-500 bg-green-50/80 dark:bg-green-900/30 flex items-center justify-center animate-pulse z-20 rounded"
             >
-              <div class="timeline-cells flex">
-                <div
-                  v-for="column in visibleDateColumns"
-                  :key="`${row.id}-${column.key}`"
-                  :class="[
-                    'timeline-cell border-r border-gray-200 dark:border-gray-700 relative',
-                    'hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200',
-                    column.isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : '',
-                    column.isWeekend
-                      ? 'bg-amber-50/30 dark:bg-amber-900/10'
-                      : '',
-                    dragOverCell === `${row.id}-${column.key}`
-                      ? 'bg-green-100 dark:bg-green-900/20 ring-2 ring-green-500/50 ring-inset shadow-lg transform scale-105'
-                      : '',
-                  ]"
-                  :style="{
-                    width: `${columnWidth}px`,
-                    minWidth: `${columnWidth}px`,
-                  }"
-                  @drop="handleDrop($event, row.id, column.key)"
-                  @dragover.prevent="handleDragOver($event, row.id, column.key)"
-                  @dragenter.prevent="
-                    handleDragEnter($event, row.id, column.key)
-                  "
-                  @dragleave="handleDragLeave($event, row.id, column.key)"
-                  @click="handleCellClick(row.id, column.key)"
-                >
-                  <!-- Today Indicator -->
-                  <div
-                    v-if="column.isToday"
-                    class="absolute top-0 left-0 right-0 h-0.5 bg-blue-500 shadow-sm"
-                  ></div>
-
-                  <!-- Drop Zone Indicator -->
-                  <div
-                    v-if="dragOverCell === `${row.id}-${column.key}`"
-                    class="absolute inset-0 border-2 border-dashed border-green-500 bg-green-50/50 dark:bg-green-900/20 flex items-center justify-center animate-pulse"
-                  >
-                    <div
-                      class="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg"
-                    >
-                      Drop here
-                    </div>
-                  </div>
-
-                  <!-- Blocks Container -->
-                  <div class="blocks-container p-1 h-full overflow-hidden">
-                    <div class="space-y-1 h-full">
-                      <TransitionGroup name="block" tag="div" class="space-y-1">
-                        <DynamicTimelineBlock
-                          v-for="block in getBlocksForCell(row.id, column.key)"
-                          :key="block.id"
-                          :block="block"
-                          :config="config"
-                          :selected="selectedBlock?.id === block.id"
-                          :resizable="hasDateRange"
-                          @click="handleBlockClick"
-                          @dragstart="handleBlockDragStart"
-                          @dragend="handleBlockDragEnd"
-                          @resize="handleBlockResize"
-                          @contextmenu="handleBlockContextMenu"
-                        />
-                      </TransitionGroup>
-                    </div>
-                  </div>
-
-                  <!-- Add Block Button (only show in empty cells) -->
-                  <div
-                    v-if="getBlocksForCell(row.id, column.key).length === 0"
-                    class="add-block-overlay absolute inset-0 opacity-0 hover:opacity-100 transition-all duration-200 bg-gray-100/50 dark:bg-gray-800/50 flex items-center justify-center backdrop-blur-sm"
-                  >
-                    <Button
-                      variant="ghost"
-                      theme="blue"
-                      size="sm"
-                      @click.stop="handleAddBlock(row.id, column.key)"
-                      class="bg-white/90 dark:bg-gray-800/90 shadow-sm border border-blue-200 dark:border-blue-700 hover:shadow-md hover:scale-105 transition-all duration-200"
-                    >
-                      <FeatherIcon name="plus" class="w-3 h-3 mr-1" />
-                      Add
-                    </Button>
-                  </div>
-                </div>
+              <div
+                class="bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-medium shadow-lg flex items-center gap-2"
+              >
+                <FeatherIcon name="arrow-down" class="w-4 h-4" />
+                Drop here
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
+
+            <!-- Blocks Container with improved spacing -->
+            <div class="blocks-container min-h-[80px] space-y-1.5">
+              <TransitionGroup name="block" tag="div" class="space-y-1.5">
+                <DynamicTimelineBlock
+                  v-for="block in getBlocksForCell(row.id, column.key)"
+                  :key="block.id"
+                  :block="block"
+                  :config="config"
+                  :selected="selectedBlock?.id === block.id"
+                  :resizable="hasDateRange"
+                  @click="handleBlockClick"
+                  @dragstart="handleBlockDragStart"
+                  @dragend="handleBlockDragEnd"
+                  @resize="handleBlockResize"
+                  @contextmenu="handleBlockContextMenu"
+                />
+              </TransitionGroup>
+
+              <!-- Enhanced Add Block Button -->
+              <Button
+                v-if="hoveredCell.row === row.id && hoveredCell.date === column.key && getBlocksForCell(row.id, column.key).length === 0"
+                variant="outline"
+                theme="blue"
+                size="sm"
+                @click.stop="handleAddBlock(row.id, column.key)"
+                class="w-full border-2 border-dashed border-blue-300 dark:border-blue-600 hover:border-blue-500 dark:hover:border-blue-400 bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all duration-200"
+              >
+                <FeatherIcon name="plus" class="w-4 h-4 mr-1" />
+                Add Block
+              </Button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
 
     <!-- Unassigned Blocks Panel -->
     <div
@@ -454,6 +442,10 @@ const selectedRow = ref(null);
 const selectedBlock = ref(null);
 const draggedBlock = ref(null);
 const dragOverCell = ref(null);
+const hoveredCell = ref({
+  row: "",
+  date: "",
+});
 const showUnassignedPanel = computed(() => props.showUnassignedPanel);
 const autoRefresh = ref(false);
 const scrollLeft = ref(0);
@@ -629,15 +621,14 @@ const stopAutoRefresh = () => {
 };
 
 // Drag and drop handlers
-const handleBlockDragStart = (event, block) => {
+const handleBlockDragStart = (block) => {
+  console.log("Block drag start:", block);
   draggedBlock.value = block;
-  // Mark if this is an unassigned block
-  const blockData = { ...block, unassigned: !block.row_id };
-  event.dataTransfer.setData("application/json", JSON.stringify(blockData));
-  event.dataTransfer.effectAllowed = "move";
+  // The block component already sets the dataTransfer data
 };
 
-const handleBlockDragEnd = (event) => {
+const handleBlockDragEnd = () => {
+  console.log("Block drag end");
   draggedBlock.value = null;
   dragOverCell.value = null;
 };
@@ -648,11 +639,13 @@ const handleDragOver = (event, rowId, date) => {
   dragOverCell.value = `${rowId}-${date}`;
 
   // Add visual feedback
-  event.currentTarget.classList.add(
-    "ring-2",
-    "ring-green-500",
-    "ring-opacity-50",
-  );
+  if (event.currentTarget && event.currentTarget.classList) {
+    event.currentTarget.classList.add(
+      "ring-2",
+      "ring-green-500",
+      "ring-opacity-50",
+    );
+  }
 };
 
 const handleDragEnter = (event, rowId, date) => {
@@ -660,22 +653,28 @@ const handleDragEnter = (event, rowId, date) => {
   dragOverCell.value = `${rowId}-${date}`;
 
   // Add hover effect
-  event.currentTarget.style.transform = "scale(1.02)";
-  event.currentTarget.style.transition = "transform 0.2s ease";
+  if (event.currentTarget && event.currentTarget.style) {
+    event.currentTarget.style.transform = "scale(1.02)";
+    event.currentTarget.style.transition = "transform 0.2s ease";
+  }
 };
 
-const handleDragLeave = (event, rowId, date) => {
+const handleDragLeave = (event) => {
   // Only clear if we're actually leaving the cell
-  if (!event.currentTarget.contains(event.relatedTarget)) {
+  if (event.currentTarget && !event.currentTarget.contains(event.relatedTarget)) {
     dragOverCell.value = null;
 
     // Remove visual feedback
-    event.currentTarget.classList.remove(
-      "ring-2",
-      "ring-green-500",
-      "ring-opacity-50",
-    );
-    event.currentTarget.style.transform = "";
+    if (event.currentTarget.classList) {
+      event.currentTarget.classList.remove(
+        "ring-2",
+        "ring-green-500",
+        "ring-opacity-50",
+      );
+    }
+    if (event.currentTarget.style) {
+      event.currentTarget.style.transform = "";
+    }
   }
 };
 
@@ -684,37 +683,59 @@ const handleDrop = (event, rowId, date) => {
   dragOverCell.value = null;
 
   // Remove all visual feedback
-  event.currentTarget.classList.remove(
-    "ring-2",
-    "ring-green-500",
-    "ring-opacity-50",
-  );
-  event.currentTarget.style.transform = "";
+  if (event.currentTarget && event.currentTarget.classList) {
+    event.currentTarget.classList.remove(
+      "ring-2",
+      "ring-green-500",
+      "ring-opacity-50",
+    );
+    
+    // Add success animation
+    event.currentTarget.classList.add("animate-pulse");
+    setTimeout(() => {
+      if (event.currentTarget && event.currentTarget.classList) {
+        event.currentTarget.classList.remove("animate-pulse");
+      }
+    }, 500);
+  }
+  
+  if (event.currentTarget && event.currentTarget.style) {
+    event.currentTarget.style.transform = "";
+  }
 
-  // Add success animation
-  event.currentTarget.classList.add("animate-pulse");
-  setTimeout(() => {
-    event.currentTarget.classList.remove("animate-pulse");
-  }, 500);
+  console.log("Drop event triggered", { rowId, date, draggedBlock: draggedBlock.value });
 
-  // Try to get data from dataTransfer first (for backlog tasks)
+  // Try to get data from dataTransfer
   let taskData = null;
   try {
     const transferData = event.dataTransfer.getData("application/json");
     if (transferData) {
       taskData = JSON.parse(transferData);
+      console.log("Task data from dataTransfer:", taskData);
     }
   } catch (e) {
     console.warn("Failed to parse drag data:", e);
   }
 
-  // Handle dragged block (existing block being moved)
+  // Handle dragged block (existing block being moved via draggedBlock ref)
   if (draggedBlock.value) {
     const blockId = draggedBlock.value.id;
     const currentRowId = draggedBlock.value.row_id;
-    const currentDate = draggedBlock.value.date;
+    let currentDate = draggedBlock.value.date || draggedBlock.value[props.config?.block_to_date_field];
+    
+    // Ensure date format consistency - extract just the date part if it's a datetime
+    if (currentDate && typeof currentDate === 'string' && currentDate.includes(' ')) {
+      currentDate = currentDate.split(' ')[0];
+    }
+    if (currentDate && currentDate instanceof Date) {
+      currentDate = currentDate.toISOString().split('T')[0];
+    }
 
+    console.log("Moving block:", { blockId, currentRowId, currentDate, newRowId: rowId, newDate: date });
+
+    // Check if we're dropping in the same place
     if (currentRowId === rowId && currentDate === date) {
+      console.log("Same location, no move needed");
       draggedBlock.value = null;
       return;
     }
@@ -727,51 +748,55 @@ const handleDrop = (event, rowId, date) => {
       oldDate: currentDate,
     });
 
-    toast({
-      title: "Block Moved",
-      text: "Block has been moved successfully",
-      icon: "check",
-      iconClasses: "text-green-600",
-    });
+    toast.success("Block has been moved successfully");
 
     draggedBlock.value = null;
     return;
   }
 
-  // Handle backlog task (new task being assigned)
-  if (taskData && taskData.unassigned) {
-    emit("assignTask", {
-      taskId: taskData.id,
-      rowId,
-      date,
-      taskData,
-    });
-
-    toast({
-      title: "Task Assigned",
-      text: "Task has been assigned successfully",
-      icon: "check",
-      iconClasses: "text-green-600",
-    });
-    return;
-  }
-
-  // Handle regular task data
+  // Handle data from dataTransfer (for blocks dragged from outside or backlog)
   if (taskData) {
+    console.log("Handling task data:", taskData);
+    
+    // Check if this is an unassigned task being assigned
+    if (taskData.unassigned || !taskData.row_id) {
+      emit("assignTask", {
+        taskId: taskData.id,
+        rowId,
+        date,
+        taskData,
+      });
+
+      toast.success("Task has been assigned successfully");
+      return;
+    }
+
+    // Handle moving existing task
+    const currentRowId = taskData.row_id;
+    let currentDate = taskData.date || taskData[props.config?.block_to_date_field];
+    
+    // Ensure date format consistency - extract just the date part if it's a datetime
+    if (currentDate && typeof currentDate === 'string' && currentDate.includes(' ')) {
+      currentDate = currentDate.split(' ')[0];
+    }
+    if (currentDate && currentDate instanceof Date) {
+      currentDate = currentDate.toISOString().split('T')[0];
+    }
+
+    if (currentRowId === rowId && currentDate === date) {
+      console.log("Same location, no move needed");
+      return;
+    }
+
     emit("blockMove", {
       blockId: taskData.id,
       newRowId: rowId,
       newDate: date,
-      oldRowId: taskData.row_id,
-      oldDate: taskData.date,
+      oldRowId: currentRowId,
+      oldDate: currentDate,
     });
 
-    toast({
-      title: "Task Moved",
-      text: "Task has been moved successfully",
-      icon: "check",
-      iconClasses: "text-green-600",
-    });
+    toast.success("Task has been moved successfully");
   }
 };
 
@@ -798,16 +823,21 @@ const handleBlockContextMenu = (block, event) => {
 const handleAddBlock = (rowId, date) => {
   emit("addBlock", { rowId, date });
 
-  toast({
-    title: "Add Block",
-    text: "Opening block creation dialog",
-    icon: "plus",
-    iconClasses: "text-blue-600",
-  });
+  toast.info("Opening block creation dialog");
 };
 
 const handleCellClick = (rowId, date) => {
   emit("cellClick", { rowId, date });
+};
+
+const handleCellHover = (rowId, date, isEntering) => {
+  if (isEntering) {
+    hoveredCell.value.row = rowId;
+    hoveredCell.value.date = date;
+  } else {
+    hoveredCell.value.row = "";
+    hoveredCell.value.date = "";
+  }
 };
 
 // Scroll handling
@@ -862,61 +892,49 @@ watch(
 </script>
 
 <style scoped>
-.dynamic-timeline-grid {
-  @apply h-full flex flex-col bg-gray-50 dark:bg-gray-900;
+/* Table structure inspired by MonthViewTable.vue */
+.resource-header-cell,
+.date-header-cell {
+  max-width: 9rem;
+  min-width: 9rem;
+  font-size: 0.875rem;
 }
 
-.grid-container {
-  @apply flex-1 overflow-hidden;
+.resource-cell {
+  position: sticky;
+  left: 0;
+  max-width: 16rem;
+  min-width: 16rem;
+  background: white;
+  border-right: 1px solid rgb(229 231 235);
 }
 
-.grid-wrapper {
-  @apply flex h-full;
-}
-
-.row-header {
-  @apply w-80 flex-shrink-0 overflow-hidden;
-}
-
-.timeline-grid {
-  @apply flex-1 overflow-auto;
-}
-
-.header-cell {
-  @apply h-20;
-}
-
-.row-cells {
-  @apply overflow-y-auto;
-}
-
-.row-cell {
-  transition: all 0.2s ease;
-}
-
-.row-cell:hover {
-  transform: translateX(2px);
-}
-
-.date-header {
-  @apply h-20;
-}
-
-.date-column {
-  transition: all 0.2s ease;
+@media (prefers-color-scheme: dark) {
+  .resource-cell {
+    background: rgb(17 24 39);
+    border-right-color: rgb(75 85 99);
+  }
 }
 
 .timeline-cell {
-  @apply min-h-full;
+  min-height: 120px;
   transition: all 0.2s ease;
+  vertical-align: top;
 }
 
-.timeline-cell:hover .add-block-overlay {
-  @apply opacity-100;
+.timeline-cell:hover {
+  background-color: rgb(249 250 251);
+}
+
+@media (prefers-color-scheme: dark) {
+  .timeline-cell:hover {
+    background-color: rgb(31 41 55);
+  }
 }
 
 .blocks-container {
-  @apply relative;
+  position: relative;
+  min-height: 80px;
 }
 
 .unassigned-panel {
@@ -934,7 +952,7 @@ watch(
   }
 }
 
-/* Block animations */
+/* Enhanced animations from MonthViewTable.vue */
 .block-enter-active,
 .block-leave-active {
   transition: all 0.3s ease;
@@ -954,7 +972,6 @@ watch(
   transition: transform 0.3s ease;
 }
 
-/* Unassigned animations */
 .unassigned-enter-active,
 .unassigned-leave-active {
   transition: all 0.3s ease;
@@ -966,41 +983,72 @@ watch(
   transform: translateY(-10px);
 }
 
-/* Scrollbar styling */
-.timeline-grid::-webkit-scrollbar {
-  @apply w-2 h-2;
+/* Enhanced hover effects */
+.group:hover .resource-cell {
+  transform: translateX(2px);
 }
 
-.timeline-grid::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-gray-800;
+/* Improved scrollbar styling */
+.dynamic-timeline-grid::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.timeline-grid::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-600 rounded;
+.dynamic-timeline-grid::-webkit-scrollbar-track {
+  background: rgb(243 244 246);
 }
 
-.timeline-grid::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-gray-500;
+.dynamic-timeline-grid::-webkit-scrollbar-thumb {
+  background: rgb(209 213 219);
+  border-radius: 4px;
 }
 
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-  .row-header {
-    @apply w-64;
+.dynamic-timeline-grid::-webkit-scrollbar-thumb:hover {
+  background: rgb(156 163 175);
+}
+
+@media (prefers-color-scheme: dark) {
+  .dynamic-timeline-grid::-webkit-scrollbar-track {
+    background: rgb(31 41 55);
   }
+  
+  .dynamic-timeline-grid::-webkit-scrollbar-thumb {
+    background: rgb(75 85 99);
+  }
+  
+  .dynamic-timeline-grid::-webkit-scrollbar-thumb:hover {
+    background: rgb(107 114 128);
+  }
+}
 
-  .unassigned-panel {
-    @apply w-72;
+/* Better responsive design */
+@media (max-width: 1024px) {
+  .resource-cell {
+    max-width: 12rem;
+    min-width: 12rem;
+  }
+  
+  .resource-header-cell,
+  .date-header-cell {
+    max-width: 7rem;
+    min-width: 7rem;
   }
 }
 
 @media (max-width: 768px) {
-  .row-header {
-    @apply w-48;
+  .resource-cell {
+    max-width: 10rem;
+    min-width: 10rem;
   }
-
-  .unassigned-panel {
-    @apply w-64 max-h-80;
+  
+  .resource-header-cell,
+  .date-header-cell {
+    max-width: 6rem;
+    min-width: 6rem;
+  }
+  
+  .timeline-cell {
+    min-height: 100px;
   }
 }
 </style>

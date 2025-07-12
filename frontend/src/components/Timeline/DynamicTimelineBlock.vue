@@ -269,6 +269,7 @@ const showControls = ref(false);
 const resizing = ref(false);
 const resizeDirection = ref(null);
 const originalDuration = ref(null);
+const dragging = ref(false);
 
 // Computed properties for block data
 const blockTitle = computed(() => {
@@ -507,13 +508,19 @@ const handleDragStart = (event) => {
     return;
   }
 
+  dragging.value = true;
   event.dataTransfer.effectAllowed = "move";
+  
+  // Set both formats for compatibility
   event.dataTransfer.setData("text/plain", props.block.id);
-  emit("dragstart", event, props.block);
+  event.dataTransfer.setData("application/json", JSON.stringify(props.block));
+  
+  emit("dragstart", props.block, event);
 };
 
 const handleDragEnd = (event) => {
-  emit("dragend", event, props.block);
+  dragging.value = false;
+  emit("dragend", props.block, event);
 };
 
 const handleContextMenu = (event) => {
