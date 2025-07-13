@@ -155,7 +155,7 @@ def get_block_entities(config, start_date, end_date, filters=None):
 
 		# Add date range filter
 		date_field = config.block_to_date_field
-		# frappe.log_error(f"📅 Date filter setup - field: {date_field}", "Timeline Date Filter Debug")
+		# frappe.log_error(f"📅 Date filter setup - field: {date_field}, start_date: {start_date}, end_date: {end_date}", "Timeline Date Filter Debug")
 		
 		if config.date_range_end_field:
 			# Handle date range blocks (block_to_date_field is start, date_range_end_field is end)
@@ -164,7 +164,7 @@ def get_block_entities(config, start_date, end_date, filters=None):
 				config.date_range_end_field: [">=", start_date]
 			}
 			block_filters.update(date_filters)
-			# frappe.log_error(f"📅 Using date range filters", "Timeline Date Range Filter")
+			# frappe.log_error(f"📅 Using date range filters: {date_filters}", "Timeline Date Range Filter")
 		else:
 			# Handle single date blocks
 			single_filter = {date_field: ["between", [start_date, end_date]]}
@@ -279,8 +279,8 @@ def get_block_entities(config, start_date, end_date, filters=None):
 		return []
 
 @frappe.whitelist()
-def update_block_assignment(block_doctype, block_name, new_row_assignment, new_date=None, config_name=None):
-	"""Update block assignment to a different row or date"""
+def update_block_assignment(block_doctype, block_name, new_row_assignment, new_date=None, new_datetime=None, config_name=None):
+	"""Update block assignment to a different row or date/datetime"""
 	try:
 		# Get the block document
 		block_doc = frappe.get_doc(block_doctype, block_name)
@@ -299,26 +299,55 @@ def update_block_assignment(block_doctype, block_name, new_row_assignment, new_d
 			old_row_assignment = getattr(block_doc, config.row_to_block_field, None)
 			setattr(block_doc, config.row_to_block_field, new_row_assignment)
 
-		# Update date if provided
-		if new_date and config:
+		# Update date/datetime if provided
+		if (new_date or new_datetime) and config:
 			old_date = getattr(block_doc, config.block_to_date_field, None)
-			setattr(block_doc, config.block_to_date_field, getdate(new_date))
+			
+			# Use datetime if provided, otherwise fall back to date
+			if new_datetime:
+				# Parse the ISO datetime string
+				from datetime import datetime
+				dt = datetime.fromisoformat(new_datetime.replace('Z', '+00:00'))
+				setattr(block_doc, config.block_to_date_field, dt)
+			elif new_date:
+				setattr(block_doc, config.block_to_date_field, getdate(new_date))
 
 		# Handle date range updates if applicable
-		if config and config.date_range_end_field and new_date:
+		if config and config.date_range_end_field and (new_date or new_datetime):
 			# If block has date range, update both start and end dates
 			current_start = getattr(block_doc, config.block_to_date_field, None)
 			current_end = getattr(block_doc, config.date_range_end_field, None)
 
 			if current_start and current_end:
-				# Calculate duration
-				duration = date_diff(current_end, current_start)
-				new_start_date = getdate(new_date)
-				new_end_date = add_days(new_start_date, duration)
+				# Calculate duration based on original type (date vs datetime)
+				if new_datetime:
+					from datetime import datetime, timedelta
+					# For datetime fields, preserve time differences
+					if isinstance(current_start, datetime) and isinstance(current_end, datetime):
+						duration = current_end - current_start
+						new_start_dt = datetime.fromisoformat(new_datetime.replace('Z', '+00:00'))
+						new_end_dt = new_start_dt + duration
+						
+						# Update both start and end datetimes
+						setattr(block_doc, config.block_to_date_field, new_start_dt)
+						setattr(block_doc, config.date_range_end_field, new_end_dt)
+					else:
+						# Fallback to date handling
+						duration = date_diff(current_end, current_start)
+						new_start_date = getdate(new_datetime.split('T')[0])
+						new_end_date = add_days(new_start_date, duration)
+						
+						setattr(block_doc, config.block_to_date_field, new_start_date)
+						setattr(block_doc, config.date_range_end_field, new_end_date)
+				else:
+					# Date-only handling
+					duration = date_diff(current_end, current_start)
+					new_start_date = getdate(new_date)
+					new_end_date = add_days(new_start_date, duration)
 
-				# block_to_date_field is the start date
-				setattr(block_doc, config.block_to_date_field, new_start_date)
-				setattr(block_doc, config.date_range_end_field, new_end_date)
+					# block_to_date_field is the start date
+					setattr(block_doc, config.block_to_date_field, new_start_date)
+					setattr(block_doc, config.date_range_end_field, new_end_date)
 
 		# Save the document
 		block_doc.save(ignore_permissions=True)

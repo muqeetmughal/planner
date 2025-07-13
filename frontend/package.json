@@ -15,7 +15,7 @@
     "@vueuse/core": "^10.7.2",
     "dayjs": "^1.11.13",
     "feather-icons": "^4.29.1",
-    "frappe-ui": "^0.1.31",
+    "frappe-ui": "0.1.105",
     "socket.io-client": "^4.8.1",
     "vee-validate": "^4.12.5",
     "vis-timeline": "^7.7.3",

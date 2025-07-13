@@ -141,9 +141,18 @@
 
         <!-- Metadata Row -->
         <div class="flex items-center justify-between text-xs">
-          <!-- Duration/Time -->
+          <!-- Time Display for Day View -->
           <div
-            v-if="blockDuration"
+            v-if="dayView && (block.start_date || block[config?.block_to_date_field])"
+            class="flex items-center gap-1 text-gray-500 dark:text-gray-400"
+          >
+            <FeatherIcon name="clock" class="w-3 h-3" />
+            <span>{{ formatTimeRange() }}</span>
+          </div>
+          
+          <!-- Duration/Time for other views -->
+          <div
+            v-else-if="blockDuration && !dayView"
             class="flex items-center gap-1 text-gray-500 dark:text-gray-400"
           >
             <FeatherIcon name="clock" class="w-3 h-3" />
@@ -345,6 +354,10 @@ const props = defineProps({
   total: {
     type: Number,
     default: 1,
+  },
+  dayView: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -673,6 +686,27 @@ const formatDateRange = () => {
   }
 
   return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+};
+
+const formatTimeRange = () => {
+  const startDateTime = formatDateForDisplay(props.block.start_date || props.block[props.config?.block_to_date_field]);
+  const endDateTime = formatDateForDisplay(props.block.end_date || props.block[props.config?.date_range_end_field]);
+  
+  if (!startDateTime) return "";
+  
+  const formatTime = (date) => {
+    return date.toLocaleTimeString("en-US", {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+  
+  if (endDateTime && endDateTime > startDateTime) {
+    return `${formatTime(startDateTime)} - ${formatTime(endDateTime)}`;
+  } else {
+    return formatTime(startDateTime);
+  }
 };
 
 const getPriorityIndicatorColor = () => {
