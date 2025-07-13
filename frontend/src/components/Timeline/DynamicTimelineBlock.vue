@@ -434,21 +434,15 @@ const blockDuration = computed(() => {
 });
 
 const hasDateRange = computed(() => {
-  // Check if configuration has date range fields
-  const hasDateFields =
-    props.config?.date_range_start_field && props.config?.date_range_end_field;
-
-  // Check if block has date range data
-  const hasBlockDates = props.block?.start_date && props.block?.end_date;
-
-  // Also check config-based field names
-  const hasConfigDates =
-    props.config?.date_range_start_field &&
-    props.config?.date_range_end_field &&
-    props.block?.[props.config.date_range_start_field] &&
-    props.block?.[props.config.date_range_end_field];
-
-  return hasDateFields && (hasBlockDates || hasConfigDates);
+  // Use config-based field names with fallbacks
+  const startField = props.config?.block_to_date_field || props.config?.date_range_start_field || 'start_date';
+  const endField = props.config?.date_range_end_field || 'end_date';
+  
+  const startValue = getDateTimeFieldValue(props.block, startField) || props.block.start_date;
+  const endValue = getDateTimeFieldValue(props.block, endField) || props.block.end_date;
+  
+  // Has date range if we have both start and end values
+  return Boolean(startValue && endValue && startValue !== endValue);
 });
 
 const assignmentInfo = computed(() => {
@@ -646,35 +640,139 @@ const formatDuration = (duration) => {
   return duration;
 };
 
-// Helper function to format dates without timezone issues
-const formatDateForDisplay = (dateInput) => {
-  if (!dateInput) return null;
+// Enhanced datetime parsing with proper format detection
+const parseDateTime = (dateTimeInput, preserveTime = true) => {
+  if (!dateTimeInput) return null;
   
   let dateObj;
-  if (typeof dateInput === 'string') {
-    // For datetime strings like "2025-07-09 00:00:00", parse without timezone conversion
-    if (dateInput.includes(' ')) {
-      const datePart = dateInput.split(' ')[0];
-      dateObj = new Date(datePart + 'T00:00:00');
-    } else if (dateInput.includes('T')) {
-      dateObj = new Date(dateInput.split('T')[0] + 'T00:00:00');
-    } else {
-      dateObj = new Date(dateInput + 'T00:00:00');
+  
+  if (typeof dateTimeInput === 'string') {
+    const trimmed = dateTimeInput.trim();
+    
+    // Handle datetime with space separator
+    if (trimmed.includes(' ') && !trimmed.includes('T')) {
+      const [datePart, timePart] = trimmed.split(' ');
+      
+      // Detect date format and convert to ISO
+      let isoDatePart;
+      
+      // Check if it's DD-MM-YYYY or DD/MM/YYYY format
+      if (datePart.includes('-') && datePart.split('-').length === 3) {
+        const parts = datePart.split('-');
+        if (parts[0].length <= 2 && parts[2].length === 4) {
+          // DD-MM-YYYY format - convert to YYYY-MM-DD
+          const [day, month, year] = parts;
+          isoDatePart = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        } else {
+          // Assume YYYY-MM-DD format
+          isoDatePart = datePart;
+        }
+      } else if (datePart.includes('/') && datePart.split('/').length === 3) {
+        const parts = datePart.split('/');
+        if (parts[0].length <= 2 && parts[2].length === 4) {
+          // DD/MM/YYYY format - convert to YYYY-MM-DD
+          const [day, month, year] = parts;
+          isoDatePart = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        } else {
+          // Assume MM/DD/YYYY format - convert to YYYY-MM-DD
+          const [month, day, year] = parts;
+          isoDatePart = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+      } else {
+        isoDatePart = datePart;
+      }
+      
+      // Create ISO datetime string
+      const isoString = preserveTime ? `${isoDatePart}T${timePart}` : `${isoDatePart}T00:00:00`;
+      dateObj = new Date(isoString);
     }
-  } else if (dateInput instanceof Date) {
-    dateObj = dateInput;
-  } else {
+    // Handle ISO format: "2025-07-09T14:30:00"
+    else if (trimmed.includes('T')) {
+      if (preserveTime) {
+        dateObj = new Date(trimmed);
+      } else {
+        const datePart = trimmed.split('T')[0];
+        dateObj = new Date(datePart + 'T00:00:00');
+      }
+    }
+    // Handle date-only formats
+    else {
+      let isoDatePart;
+      
+      // Check for DD-MM-YYYY format
+      if (trimmed.includes('-') && trimmed.split('-').length === 3) {
+        const parts = trimmed.split('-');
+        if (parts[0].length <= 2 && parts[2].length === 4) {
+          // DD-MM-YYYY format - convert to YYYY-MM-DD
+          const [day, month, year] = parts;
+          isoDatePart = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        } else {
+          // Assume YYYY-MM-DD format
+          isoDatePart = trimmed;
+        }
+      } else {
+        isoDatePart = trimmed;
+      }
+      
+      dateObj = new Date(isoDatePart + 'T00:00:00');
+    }
+  } 
+  else if (dateTimeInput instanceof Date) {
+    dateObj = new Date(dateTimeInput);
+    if (!preserveTime) {
+      dateObj.setHours(0, 0, 0, 0);
+    }
+  } 
+  else {
+    return null;
+  }
+  
+  // Validate the parsed date
+  if (isNaN(dateObj.getTime())) {
+    console.warn('Invalid date parsed:', dateTimeInput, '- trying manual parsing');
+    
+    // Fallback: try manual parsing for DD-MM-YYYY HH:mm:ss format
+    if (typeof dateTimeInput === 'string' && dateTimeInput.includes(' ')) {
+      try {
+        const [datePart, timePart] = dateTimeInput.split(' ');
+        const [day, month, year] = datePart.split(/[-\/]/).map(Number);
+        const [hours, minutes, seconds] = timePart.split(':').map(Number);
+        
+        // Create date with explicit components (month is 0-indexed)
+        dateObj = new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0);
+        
+        if (!isNaN(dateObj.getTime())) {
+          return dateObj;
+        }
+      } catch (e) {
+        console.warn('Manual parsing also failed:', e.message);
+      }
+    }
+    
     return null;
   }
   
   return dateObj;
 };
 
-const formatDateRange = () => {
-  if (!props.block.start_date || !props.block.end_date) return "";
+// Helper to get datetime field values with fallbacks
+const getDateTimeFieldValue = (block, fieldName) => {
+  if (!block || !fieldName) return null;
+  return block[fieldName] || null;
+};
 
-  const start = formatDateForDisplay(props.block.start_date);
-  const end = formatDateForDisplay(props.block.end_date);
+const formatDateRange = () => {
+  // Use config-based field names with fallbacks
+  const startField = props.config?.block_to_date_field || 'start_date';
+  const endField = props.config?.date_range_end_field || 'end_date';
+  
+  const startValue = getDateTimeFieldValue(props.block, startField) || props.block.start_date;
+  const endValue = getDateTimeFieldValue(props.block, endField) || props.block.end_date;
+  
+  if (!startValue || !endValue) return "";
+
+  const start = parseDateTime(startValue, false); // Date-only for range display
+  const end = parseDateTime(endValue, false);
   
   if (!start || !end) return "";
 
@@ -689,8 +787,15 @@ const formatDateRange = () => {
 };
 
 const formatTimeRange = () => {
-  const startDateTime = formatDateForDisplay(props.block.start_date || props.block[props.config?.block_to_date_field]);
-  const endDateTime = formatDateForDisplay(props.block.end_date || props.block[props.config?.date_range_end_field]);
+  // Use config-based field names with fallbacks
+  const startField = props.config?.block_to_date_field || 'start_date';
+  const endField = props.config?.date_range_end_field || 'end_date';
+  
+  const startValue = getDateTimeFieldValue(props.block, startField) || props.block.start_date || props.block.date;
+  const endValue = getDateTimeFieldValue(props.block, endField) || props.block.end_date;
+  
+  const startDateTime = parseDateTime(startValue, true); // Preserve time
+  const endDateTime = parseDateTime(endValue, true);
   
   if (!startDateTime) return "";
   
@@ -702,9 +807,17 @@ const formatTimeRange = () => {
     });
   };
   
+  // Show time range if we have both start and end times
   if (endDateTime && endDateTime > startDateTime) {
-    return `${formatTime(startDateTime)} - ${formatTime(endDateTime)}`;
+    // Check if it's the same day to show time range or date-time range
+    if (startDateTime.toDateString() === endDateTime.toDateString()) {
+      return `${formatTime(startDateTime)} - ${formatTime(endDateTime)}`;
+    } else {
+      // Different days - show abbreviated format
+      return `${formatTime(startDateTime)} (${Math.ceil((endDateTime - startDateTime) / (1000 * 60 * 60 * 24))}d)`;
+    }
   } else {
+    // Single time point
     return formatTime(startDateTime);
   }
 };

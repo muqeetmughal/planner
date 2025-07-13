@@ -95,9 +95,11 @@
               >
                 <div class="flex items-center gap-3">
                   <!-- Resource Avatar -->
-                  <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-xs font-bold">
-                    {{ getRowInitials(row) }}
-                  </div>
+                  <Avatar
+                    :label="getRowTitle(row)"
+                    :image="row.image"
+                    size="lg"
+                  />
                   
                   <!-- Resource Info -->
                   <div class="flex-1 min-w-0">
@@ -152,7 +154,7 @@
               <!-- Resource Columns -->
               <div class="resource-columns flex">
                 <div
-                  v-for="(row, colIndex) in filteredRows"
+                  v-for="row in filteredRows"
                   :key="row.id"
                   class="resource-column relative flex-shrink-0 border-r border-gray-200 dark:border-gray-700"
                   :style="{ width: '200px', height: getTotalGridHeight() + 'px' }"
@@ -200,7 +202,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from "vue";
-import { Button, FeatherIcon } from "frappe-ui";
+import { Button, FeatherIcon, Avatar } from "frappe-ui";
 import DynamicTimelineBlock from "./DynamicTimelineBlock.vue";
 
 const props = defineProps({
@@ -265,16 +267,32 @@ const visibleBlocks = computed(() => {
   dayEnd.setHours(23, 59, 59, 999);
   
   return props.blocks.filter(block => {
-    const startDate = parseDateTime(block.start_date || block[props.config?.block_to_date_field] || block.date);
-    const endDate = parseDateTime(block.end_date || block[props.config?.date_range_end_field]);
+    // Use improved datetime field detection
+    const startField = props.config?.block_to_date_field || 'start_date';
+    const endField = props.config?.date_range_end_field || 'end_date';
     
-    if (!startDate) return false;
+    const startDate = parseDateTime(
+      getDateTimeFieldValue(block, startField) || 
+      block.start_date || 
+      block.date
+    );
+    
+    const endDate = parseDateTime(
+      getDateTimeFieldValue(block, endField) || 
+      block.end_date
+    );
+    
+    if (!startDate) {
+      console.warn('Block missing start date:', block);
+      return false;
+    }
     
     // Check if block overlaps with the current day
-    if (endDate) {
+    if (endDate && endDate > startDate) {
+      // Multi-day or timed event
       return startDate <= dayEnd && endDate >= dayStart;
     } else {
-      // Single datetime block
+      // Single datetime block - check if it falls within the day
       return startDate >= dayStart && startDate <= dayEnd;
     }
   });
@@ -293,30 +311,135 @@ const isToday = computed(() => {
   return props.currentDate.toDateString() === today.toDateString();
 });
 
-// Helper functions
-const parseDateTime = (dateTimeStr) => {
-  if (!dateTimeStr) return null;
+// Enhanced datetime parsing function with proper format detection
+const parseDateTime = (dateTimeInput, preserveTime = true) => {
+  if (!dateTimeInput) return null;
   
-  // Handle different datetime formats
   let dateObj;
-  if (typeof dateTimeStr === 'string') {
-    if (dateTimeStr.includes(' ')) {
-      // "2025-07-09 14:30:00" format
-      dateObj = new Date(dateTimeStr.replace(' ', 'T'));
-    } else if (dateTimeStr.includes('T')) {
-      // ISO format
-      dateObj = new Date(dateTimeStr);
-    } else {
-      // Date only - assume start of day
-      dateObj = new Date(dateTimeStr + 'T00:00:00');
+  
+  if (typeof dateTimeInput === 'string') {
+    const trimmed = dateTimeInput.trim();
+    
+    // Handle datetime with space separator
+    if (trimmed.includes(' ') && !trimmed.includes('T')) {
+      const [datePart, timePart] = trimmed.split(' ');
+      
+      // Detect date format and convert to ISO
+      let isoDatePart;
+      
+      // Check if it's DD-MM-YYYY or DD/MM/YYYY format
+      if (datePart.includes('-') && datePart.split('-').length === 3) {
+        const parts = datePart.split('-');
+        if (parts[0].length <= 2 && parts[2].length === 4) {
+          // DD-MM-YYYY format - convert to YYYY-MM-DD
+          const [day, month, year] = parts;
+          isoDatePart = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        } else {
+          // Assume YYYY-MM-DD format
+          isoDatePart = datePart;
+        }
+      } else if (datePart.includes('/') && datePart.split('/').length === 3) {
+        const parts = datePart.split('/');
+        if (parts[0].length <= 2 && parts[2].length === 4) {
+          // DD/MM/YYYY format - convert to YYYY-MM-DD
+          const [day, month, year] = parts;
+          isoDatePart = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        } else {
+          // Assume MM/DD/YYYY format - convert to YYYY-MM-DD
+          const [month, day, year] = parts;
+          isoDatePart = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+      } else {
+        isoDatePart = datePart;
+      }
+      
+      // Create ISO datetime string
+      const isoString = preserveTime ? `${isoDatePart}T${timePart}` : `${isoDatePart}T00:00:00`;
+      dateObj = new Date(isoString);
     }
-  } else if (dateTimeStr instanceof Date) {
-    dateObj = dateTimeStr;
-  } else {
+    // Handle ISO format: "2025-07-09T14:30:00"
+    else if (trimmed.includes('T')) {
+      if (preserveTime) {
+        dateObj = new Date(trimmed);
+      } else {
+        const datePart = trimmed.split('T')[0];
+        dateObj = new Date(datePart + 'T00:00:00');
+      }
+    }
+    // Handle date-only formats
+    else {
+      let isoDatePart;
+      
+      // Check for DD-MM-YYYY format
+      if (trimmed.includes('-') && trimmed.split('-').length === 3) {
+        const parts = trimmed.split('-');
+        if (parts[0].length <= 2 && parts[2].length === 4) {
+          // DD-MM-YYYY format - convert to YYYY-MM-DD
+          const [day, month, year] = parts;
+          isoDatePart = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        } else {
+          // Assume YYYY-MM-DD format
+          isoDatePart = trimmed;
+        }
+      } else {
+        isoDatePart = trimmed;
+      }
+      
+      dateObj = new Date(isoDatePart + 'T00:00:00');
+    }
+  } 
+  else if (dateTimeInput instanceof Date) {
+    dateObj = new Date(dateTimeInput);
+    if (!preserveTime) {
+      dateObj.setHours(0, 0, 0, 0);
+    }
+  } 
+  else {
     return null;
   }
   
-  return isNaN(dateObj.getTime()) ? null : dateObj;
+  // Validate the parsed date
+  if (isNaN(dateObj.getTime())) {
+    console.warn('Invalid date parsed:', dateTimeInput, '- trying manual parsing');
+    
+    // Fallback: try manual parsing for DD-MM-YYYY HH:mm:ss format
+    if (typeof dateTimeInput === 'string' && dateTimeInput.includes(' ')) {
+      try {
+        const [datePart, timePart] = dateTimeInput.split(' ');
+        const [day, month, year] = datePart.split(/[-\/]/).map(Number);
+        const [hours, minutes, seconds] = timePart.split(':').map(Number);
+        
+        // Create date with explicit components (month is 0-indexed)
+        dateObj = new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0);
+        
+        if (!isNaN(dateObj.getTime())) {
+          return dateObj;
+        }
+      } catch (e) {
+        console.warn('Manual parsing also failed:', e.message);
+      }
+    }
+    
+    return null;
+  }
+  
+  return dateObj;
+};
+
+// Helper function for improved datetime field detection
+const getDateTimeFieldValue = (block, fieldName) => {
+  if (!block || !fieldName) return null;
+  
+  // Try the configured field name first
+  if (block[fieldName]) return block[fieldName];
+  
+  // Fall back to common field names
+  const commonFields = ['date', 'start_date', 'end_date', 'datetime', 'scheduled_date'];
+  for (const field of commonFields) {
+    if (block[field]) return block[field];
+  }
+  
+  return null;
 };
 
 const formatDayTitle = () => {
@@ -370,15 +493,6 @@ const getRowTitle = (row) => {
   return row.label || row.name || row.id;
 };
 
-const getRowInitials = (row) => {
-  const title = getRowTitle(row);
-  return title
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-};
 
 const getRowBlockCount = (rowId) => {
   return visibleBlocks.value.filter((block) => block.row_id === rowId).length;
@@ -389,22 +503,49 @@ const getBlocksForResource = (rowId) => {
 };
 
 const getBlockStyle = (block) => {
-  const startDateTime = parseDateTime(block.start_date || block[props.config?.block_to_date_field] || block.date);
-  const endDateTime = parseDateTime(block.end_date || block[props.config?.date_range_end_field]);
+  // Use improved datetime field detection
+  const startField = props.config?.block_to_date_field || 'start_date';
+  const endField = props.config?.date_range_end_field || 'end_date';
   
-  if (!startDateTime) return {};
+  const startDateTime = parseDateTime(
+    getDateTimeFieldValue(block, startField) || 
+    block.start_date || 
+    block.date
+  );
+  
+  const endDateTime = parseDateTime(
+    getDateTimeFieldValue(block, endField) || 
+    block.end_date
+  );
+  
+  if (!startDateTime) {
+    console.warn('Cannot calculate block style without start time:', block);
+    return { display: 'none' };
+  }
   
   const hourHeight = getHourHeight();
   
-  // Calculate start position
+  // Calculate start position with bounds checking
   const startHours = startDateTime.getHours() + (startDateTime.getMinutes() / 60);
   const top = Math.max(0, (startHours - startHour.value) * hourHeight);
   
-  // Calculate height
-  let height = hourHeight; // Default 1 hour
+  // Calculate height with smart defaults
+  let height = hourHeight * 0.8; // Default to 80% of hour height for better spacing
+  
   if (endDateTime && endDateTime > startDateTime) {
-    const durationHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
-    height = Math.max(20, durationHours * hourHeight); // Minimum 20px height
+    const durationMs = endDateTime - startDateTime;
+    const durationHours = durationMs / (1000 * 60 * 60);
+    
+    // Ensure minimum height for readability
+    height = Math.max(24, durationHours * hourHeight);
+    
+    // Cap maximum height to prevent blocks from extending beyond visible area
+    const maxHeight = (endHour.value - startHour.value + 1) * hourHeight - top;
+    height = Math.min(height, maxHeight);
+  } else {
+    // For blocks without end time, use a reasonable default
+    const blockDuration = block.duration || 1; // Default 1 hour
+    height = Math.max(24, blockDuration * hourHeight * 0.8);
   }
   
   return {
@@ -413,6 +554,7 @@ const getBlockStyle = (block) => {
     left: '4px',
     right: '4px',
     width: 'calc(100% - 8px)',
+    minHeight: '24px', // Ensure blocks are always visible
   };
 };
 
