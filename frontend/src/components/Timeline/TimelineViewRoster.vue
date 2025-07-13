@@ -996,7 +996,7 @@ watch(currentViewMode, () => {
 
 onMounted(() => {
   // Initialize component
-  console.log('Timeline Roster mounted with', props.assignees.length, 'assignees and', props.tasks.length, 'tasks')
+  // console.log('Timeline Roster mounted with', props.assignees.length, 'assignees and', props.tasks.length, 'tasks')
 })
 </script>
 

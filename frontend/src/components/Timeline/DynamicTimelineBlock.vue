@@ -1,13 +1,20 @@
 <template>
   <div
     :class="[
-      'timeline-block relative rounded-lg border cursor-pointer select-none transition-all duration-200 group',
+      'timeline-block relative border cursor-pointer select-none transition-all duration-200 group',
       blockClasses,
+      spanningClasses,
+      compactClasses,
       {
-        'hover:shadow-md hover:scale-105 hover:z-10': !unassigned,
+        'hover:shadow-md hover:scale-105 hover:z-10': !unassigned && !spanning && !compact,
+        'hover:shadow-sm hover:scale-102 hover:z-10': !unassigned && compact,
         'opacity-75 border-dashed': unassigned,
         'ring-2 ring-blue-500 ring-opacity-50': selected,
         'transform scale-95 opacity-60': dragging,
+        'rounded-lg': cellPosition === 'single',
+        'rounded-l-lg rounded-r-none': cellPosition === 'start',
+        'rounded-none': cellPosition === 'middle',
+        'rounded-r-lg rounded-l-none': cellPosition === 'end',
       },
     ]"
     :style="blockStyle"
@@ -19,36 +26,52 @@
     @mouseenter="showControls = true"
     @mouseleave="showControls = false"
   >
-    <!-- Resize Handle (Left) -->
+    <!-- Resize Handle (Left) - Only show on start cell -->
     <div
-      v-if="resizable && hasDateRange && !unassigned"
+      v-if="resizable && hasDateRange && !unassigned && isStartCell"
       class="resize-handle resize-left absolute left-0 top-0 bottom-0 w-2 cursor-w-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-10"
       @mousedown="startResize('left', $event)"
     >
       <div
-        class="w-full h-full bg-blue-500 hover:bg-blue-600 rounded-l-lg shadow-sm"
+        class="w-full h-full bg-blue-500 hover:bg-blue-600 shadow-sm"
+        :class="{
+          'rounded-l-lg': cellPosition === 'single' || cellPosition === 'start'
+        }"
       ></div>
     </div>
 
     <!-- Main Block Content -->
-    <div class="block-content p-3 min-h-full flex flex-col">
+    <div :class="[
+      'block-content min-h-full flex',
+      compact ? 'p-2 flex-row items-center gap-2' : 'p-3 flex-col'
+    ]">
       <!-- Header Row -->
-      <div class="flex items-start justify-between mb-2">
+      <div :class="[
+        'flex items-start justify-between',
+        compact ? 'mb-0' : 'mb-2'
+      ]">
         <div class="flex items-center gap-2 flex-1 min-w-0">
           <!-- Status Indicator -->
           <div
-            :class="['w-2 h-2 rounded-full flex-shrink-0', statusColor]"
+            :class="[
+              'rounded-full flex-shrink-0',
+              compact ? 'w-1.5 h-1.5' : 'w-2 h-2',
+              statusColor
+            ]"
           ></div>
 
           <!-- Block Title -->
           <div class="flex-1 min-w-0">
             <div
-              class="text-sm font-semibold text-gray-900 dark:text-white truncate"
+              :class="[
+                'font-semibold text-gray-900 dark:text-white truncate',
+                compact ? 'text-xs' : 'text-sm'
+              ]"
             >
               {{ blockTitle }}
             </div>
             <div
-              v-if="blockSubtitle"
+              v-if="blockSubtitle && !compact"
               class="text-xs text-gray-500 dark:text-gray-400 truncate"
             >
               {{ blockSubtitle }}
@@ -60,7 +83,7 @@
         <div class="flex items-center gap-1 flex-shrink-0">
           <!-- Priority Badge -->
           <div
-            v-if="blockPriority"
+            v-if="blockPriority && !compact"
             :class="[
               'px-1.5 py-0.5 rounded text-xs font-medium',
               priorityBadgeClass,
@@ -68,10 +91,20 @@
           >
             {{ blockPriority }}
           </div>
+          
+          <!-- Compact Priority Indicator -->
+          <div
+            v-if="blockPriority && compact"
+            :class="[
+              'w-2 h-2 rounded-full',
+              getPriorityIndicatorColor()
+            ]"
+            :title="blockPriority"
+          ></div>
 
           <!-- Quick Actions (show on hover) -->
           <div
-            v-if="showControls && !unassigned"
+            v-if="showControls && !unassigned && !compact"
             class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <Button
@@ -97,7 +130,7 @@
       </div>
 
       <!-- Content Area -->
-      <div class="flex-1 space-y-2">
+      <div v-if="!compact" class="flex-1 space-y-2">
         <!-- Description -->
         <div
           v-if="blockDescription"
@@ -136,9 +169,9 @@
           </div>
         </div>
 
-        <!-- Date Range (for spanning blocks) -->
+        <!-- Date Range (for spanning blocks) - Only show on start cell -->
         <div
-          v-if="hasDateRange && (block.start_date || block.end_date)"
+          v-if="hasDateRange && (block.start_date || block.end_date) && isStartCell"
           class="text-xs text-gray-500 dark:text-gray-400"
         >
           <div class="flex items-center gap-1">
@@ -155,6 +188,32 @@
           <div class="flex items-center gap-1">
             <FeatherIcon name="user" class="w-3 h-3" />
             <span>{{ assignmentInfo }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Compact Content -->
+      <div v-else class="flex items-center gap-2 flex-1 min-w-0">
+        <!-- Duration indicator for compact mode -->
+        <div
+          v-if="blockDuration"
+          class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
+        >
+          {{ formatDuration(blockDuration) }}
+        </div>
+        
+        <!-- Progress indicator for compact mode -->
+        <div
+          v-if="blockProgress !== null"
+          class="flex-1 min-w-0"
+        >
+          <div
+            class="h-1 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden"
+          >
+            <div
+              :class="['h-full transition-all duration-300', progressColor]"
+              :style="{ width: `${blockProgress}%` }"
+            ></div>
           </div>
         </div>
       </div>
@@ -182,14 +241,17 @@
       </div>
     </div>
 
-    <!-- Resize Handle (Right) -->
+    <!-- Resize Handle (Right) - Only show on end cell -->
     <div
-      v-if="resizable && hasDateRange && !unassigned"
+      v-if="resizable && hasDateRange && !unassigned && isEndCell"
       class="resize-handle resize-right absolute right-0 top-0 bottom-0 w-2 cursor-e-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-10"
       @mousedown="startResize('right', $event)"
     >
       <div
-        class="w-full h-full bg-blue-500 hover:bg-blue-600 rounded-r-lg shadow-sm"
+        class="w-full h-full bg-blue-500 hover:bg-blue-600 shadow-sm"
+        :class="{
+          'rounded-r-lg': cellPosition === 'single' || cellPosition === 'end'
+        }"
       ></div>
     </div>
 
@@ -251,6 +313,38 @@ const props = defineProps({
   updating: {
     type: Boolean,
     default: false,
+  },
+  isStartCell: {
+    type: Boolean,
+    default: true,
+  },
+  isEndCell: {
+    type: Boolean,
+    default: true,
+  },
+  cellPosition: {
+    type: String,
+    default: 'single', // 'single', 'start', 'middle', 'end'
+  },
+  spanWidth: {
+    type: Number,
+    default: 1,
+  },
+  spanning: {
+    type: Boolean,
+    default: false,
+  },
+  compact: {
+    type: Boolean,
+    default: false,
+  },
+  index: {
+    type: Number,
+    default: 0,
+  },
+  total: {
+    type: Number,
+    default: 1,
   },
 });
 
@@ -453,15 +547,74 @@ const blockClasses = computed(() => {
   return classes;
 });
 
+const spanningClasses = computed(() => {
+  const classes = [];
+  
+  if (props.spanning && hasDateRange.value) {
+    classes.push('timeline-block-spanning');
+    
+    // Add position-specific classes
+    if (props.cellPosition === 'start') {
+      classes.push('spanning-start');
+    } else if (props.cellPosition === 'middle') {
+      classes.push('spanning-middle');
+    } else if (props.cellPosition === 'end') {
+      classes.push('spanning-end');
+    }
+  }
+  
+  return classes;
+});
+
+const compactClasses = computed(() => {
+  const classes = [];
+  
+  if (props.compact) {
+    classes.push('timeline-block-compact');
+    
+    // Add stacking z-index for overlapping effect
+    if (props.total > 1) {
+      classes.push('stacked-block');
+    }
+  }
+  
+  return classes;
+});
+
 const blockStyle = computed(() => {
   const style = {};
 
-  // Set minimum height based on content
-  style.minHeight = "80px";
+  // Set minimum height based on content and mode
+  if (props.compact) {
+    style.minHeight = "32px";
+    style.maxHeight = "40px";
+  } else {
+    style.minHeight = "80px";
+  }
 
   // Spanning blocks (date ranges)
   if (hasDateRange.value) {
-    style.minWidth = "120px";
+    style.minWidth = props.compact ? "80px" : "120px";
+    
+    // For spanning blocks, make them fill the full width of cells
+    if (props.spanning && props.spanWidth > 1) {
+      // Calculate width based on span (assuming standard cell width)
+      const cellWidth = 160; // This should match the CSS cell width
+      const borderWidth = 2; // Account for borders
+      style.width = `${(props.spanWidth * cellWidth) - borderWidth}px`;
+      style.position = 'absolute';
+      style.left = '0';
+      style.right = 'auto';
+      style.zIndex = '5';
+    }
+  }
+  
+  // Stacking for multiple blocks
+  if (props.compact && props.total > 1) {
+    style.zIndex = `${10 + props.index}`;
+    if (props.index > 0) {
+      style.marginTop = `-${Math.min(props.index * 4, 12)}px`;
+    }
   }
 
   return style;
@@ -480,11 +633,37 @@ const formatDuration = (duration) => {
   return duration;
 };
 
+// Helper function to format dates without timezone issues
+const formatDateForDisplay = (dateInput) => {
+  if (!dateInput) return null;
+  
+  let dateObj;
+  if (typeof dateInput === 'string') {
+    // For datetime strings like "2025-07-09 00:00:00", parse without timezone conversion
+    if (dateInput.includes(' ')) {
+      const datePart = dateInput.split(' ')[0];
+      dateObj = new Date(datePart + 'T00:00:00');
+    } else if (dateInput.includes('T')) {
+      dateObj = new Date(dateInput.split('T')[0] + 'T00:00:00');
+    } else {
+      dateObj = new Date(dateInput + 'T00:00:00');
+    }
+  } else if (dateInput instanceof Date) {
+    dateObj = dateInput;
+  } else {
+    return null;
+  }
+  
+  return dateObj;
+};
+
 const formatDateRange = () => {
   if (!props.block.start_date || !props.block.end_date) return "";
 
-  const start = new Date(props.block.start_date);
-  const end = new Date(props.block.end_date);
+  const start = formatDateForDisplay(props.block.start_date);
+  const end = formatDateForDisplay(props.block.end_date);
+  
+  if (!start || !end) return "";
 
   if (start.toDateString() === end.toDateString()) {
     return start.toLocaleDateString("en-US", {
@@ -494,6 +673,19 @@ const formatDateRange = () => {
   }
 
   return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+};
+
+const getPriorityIndicatorColor = () => {
+  const priority = blockPriority.value?.toLowerCase();
+  
+  const priorityColors = {
+    high: 'bg-red-500',
+    urgent: 'bg-red-500',
+    medium: 'bg-amber-500',
+    low: 'bg-green-500',
+  };
+  
+  return priorityColors[priority] || 'bg-gray-400';
 };
 
 // Event handlers
@@ -548,20 +740,76 @@ const startResize = (direction, event) => {
   originalDuration.value = blockDuration.value || 1;
 
   const startX = event.clientX;
-  const startDuration = originalDuration.value;
+  const cellWidth = 160; // Standard cell width
+  
+  // For date range blocks, calculate duration in days
+  let startDuration = originalDuration.value;
+  if (hasDateRange.value) {
+    const startDate = props.block[props.config?.block_to_date_field] || props.block.date;
+    const endDate = props.block[props.config?.date_range_end_field];
+    
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      startDuration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1; // Duration in days
+    }
+  }
 
   const handleMouseMove = (e) => {
     const deltaX = e.clientX - startX;
-    const hourChange = Math.round(deltaX / 40); // 40px per hour adjustment
-
+    
     let newDuration = startDuration;
-    if (direction === "right") {
-      newDuration = Math.max(0.5, startDuration + hourChange);
+    if (hasDateRange.value) {
+      // For date range blocks, use day-based resizing
+      const dayChange = Math.round(deltaX / cellWidth);
+      if (direction === "right") {
+        newDuration = Math.max(1, startDuration + dayChange);
+      } else {
+        newDuration = Math.max(1, startDuration - dayChange);
+      }
     } else {
-      newDuration = Math.max(0.5, startDuration - hourChange);
+      // For single date blocks, use hour-based resizing
+      const hourChange = Math.round(deltaX / 40);
+      if (direction === "right") {
+        newDuration = Math.max(0.5, startDuration + hourChange);
+      } else {
+        newDuration = Math.max(0.5, startDuration - hourChange);
+      }
     }
 
-    emit("resize", props.block, newDuration);
+    // Enhanced resize event with more detailed data
+    const resizeData = {
+      block: props.block,
+      newDuration,
+      direction
+    };
+    
+    // Calculate new dates for date range blocks
+    if (hasDateRange.value) {
+      const startField = props.config?.block_to_date_field;
+      const endField = props.config?.date_range_end_field;
+      
+      if (startField && endField) {
+        const currentStart = props.block[startField] || props.block.date;
+        const currentEnd = props.block[endField];
+        
+        if (direction === 'right' && currentStart) {
+          // Extending to the right - calculate new end date
+          const startDate = new Date(currentStart);
+          const newEndDate = new Date(startDate);
+          newEndDate.setDate(startDate.getDate() + Math.floor(newDuration) - 1);
+          resizeData.newEndDate = newEndDate.toISOString().split('T')[0];
+        } else if (direction === 'left' && currentEnd) {
+          // Extending to the left - calculate new start date
+          const endDate = new Date(currentEnd);
+          const newStartDate = new Date(endDate);
+          newStartDate.setDate(endDate.getDate() - Math.floor(newDuration) + 1);
+          resizeData.newStartDate = newStartDate.toISOString().split('T')[0];
+        }
+      }
+    }
+    
+    emit("resize", resizeData);
   };
 
   const handleMouseUp = () => {
@@ -574,6 +822,15 @@ const startResize = (direction, event) => {
   document.addEventListener("mousemove", handleMouseMove);
   document.addEventListener("mouseup", handleMouseUp);
 };
+
+// Computed properties for new props
+const spanWidth = computed(() => {
+  return props.spanWidth || 1;
+});
+
+const spanning = computed(() => {
+  return props.spanning;
+});
 
 // Watchers
 watch(
@@ -724,5 +981,244 @@ watch(
 
 .timeline-block.updating {
   animation: pulse-update 1s ease-in-out infinite;
+}
+
+/* Enhanced Spanning block styles */
+.timeline-block-spanning {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(59, 130, 246, 0.05) 50%,
+    rgba(59, 130, 246, 0.1) 100%
+  );
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  position: relative;
+  overflow: visible;
+}
+
+/* Spanning position styles */
+.spanning-start {
+  border-right: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.spanning-middle {
+  border-left: 1px solid rgba(59, 130, 246, 0.2);
+  border-right: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.spanning-end {
+  border-left: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Connection indicator for spanning blocks */
+.timeline-block-spanning::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.6),
+    rgba(59, 130, 246, 0.3),
+    rgba(59, 130, 246, 0.6)
+  );
+  transform: translateY(-50%);
+  border-radius: 1px;
+  z-index: 1;
+}
+
+/* Hide connection on start and end for cleaner look */
+.spanning-start::before {
+  left: 50%;
+}
+
+.spanning-end::before {
+  right: 50%;
+}
+
+.timeline-block-spanning:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.15) 0%,
+    rgba(59, 130, 246, 0.08) 50%,
+    rgba(59, 130, 246, 0.15) 100%
+  );
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: none; /* Disable scale transform for spanning blocks */
+}
+
+/* Enhanced resize handles for spanning blocks */
+.timeline-block-spanning .resize-handle {
+  opacity: 0.7;
+  background: rgba(59, 130, 246, 0.3);
+}
+
+.timeline-block-spanning .resize-handle:hover {
+  opacity: 1;
+  background: rgba(59, 130, 246, 0.5);
+  width: 6px;
+}
+
+/* Content adjustments for spanning blocks */
+.timeline-block-spanning .block-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* Middle blocks - simplified content */
+.spanning-middle .block-content {
+  opacity: 0.6;
+  padding: 1rem 0.5rem;
+}
+
+.spanning-middle .block-content > *:not(:first-child) {
+  display: none;
+}
+
+/* Dark mode adjustments for spanning blocks */
+@media (prefers-color-scheme: dark) {
+  .timeline-block-spanning {
+    background: linear-gradient(
+      90deg,
+      rgba(59, 130, 246, 0.2) 0%,
+      rgba(59, 130, 246, 0.1) 50%,
+      rgba(59, 130, 246, 0.2) 100%
+    );
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+  
+  .timeline-block-spanning:hover {
+    background: linear-gradient(
+      90deg,
+      rgba(59, 130, 246, 0.25) 0%,
+      rgba(59, 130, 246, 0.12) 50%,
+      rgba(59, 130, 246, 0.25) 100%
+    );
+  }
+  
+  .spanning-start,
+  .spanning-middle,
+  .spanning-end {
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* Compact block styles */
+.timeline-block-compact {
+  min-height: 32px;
+  max-height: 40px;
+  transition: all 0.2s ease;
+}
+
+.timeline-block-compact .block-content {
+  padding: 0.5rem;
+}
+
+.timeline-block-compact:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.1);
+}
+
+/* Stacked blocks */
+.stacked-block {
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stacked-block:not(:first-child) {
+  border-top: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Multiple blocks indicator */
+.multiple-blocks {
+  position: relative;
+}
+
+.multiple-blocks::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 2px;
+  right: -2px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+  border-radius: 1px;
+  opacity: 0.6;
+}
+
+/* Compact mode adjustments */
+.timeline-block-compact .resize-handle {
+  display: none; /* Hide resize handles in compact mode */
+}
+
+.timeline-block-compact .drag-handle {
+  top: 2px;
+  right: 2px;
+}
+
+/* Enhanced transitions for stacking */
+.block-enter-active,
+.block-leave-active {
+  transition: all 0.3s ease;
+}
+
+.block-enter-from {
+  opacity: 0;
+  transform: scale(0.8) translateY(10px);
+}
+
+.block-leave-to {
+  opacity: 0;
+  transform: scale(0.8) translateY(-10px);
+}
+
+.block-move {
+  transition: transform 0.3s ease;
+}
+
+/* Cell expansion animations */
+.cell-expanded {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.cell-compact {
+  max-height: 120px;
+  overflow: hidden;
+}
+
+/* Scroll styling for expanded cells */
+.cell-expanded::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cell-expanded::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cell-expanded::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 2px;
+}
+
+.cell-expanded::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.8);
+}
+
+/* Dark mode adjustments for compact blocks */
+@media (prefers-color-scheme: dark) {
+  .timeline-block-compact:hover {
+    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.3);
+  }
+  
+  .stacked-block:not(:first-child) {
+    border-top-color: rgba(55, 65, 81, 0.8);
+  }
+  
+  .multiple-blocks::before {
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.4), transparent);
+  }
 }
 </style>

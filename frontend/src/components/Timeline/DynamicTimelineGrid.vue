@@ -1,7 +1,11 @@
 <template>
   <div
-    class="dynamic-timeline-grid rounded-lg border overflow-auto max-h-[45rem]"
-    :class="loading && 'animate-pulse pointer-events-none'"
+    class="dynamic-timeline-grid rounded-lg border overflow-auto"
+    :class="[
+      loading && 'animate-pulse pointer-events-none',
+      getGridHeightClass()
+    ]"
+    :data-row-count="filteredRows.length > 20 ? 'large' : 'normal'"
   >
     <!-- Enhanced Header with Search and Filters -->
     <div
@@ -107,15 +111,46 @@
             </Button>
           </div>
 
-          <div class="text-sm text-gray-500 dark:text-gray-400">
-            {{ filteredRows.length }} rows • {{ visibleBlocks.length }} blocks
+          <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+            <span>{{ filteredRows.length }} rows • {{ visibleBlocks.length }} blocks</span>
+            <div class="flex items-center gap-2" v-if="filteredRows.length > 8">
+              <FeatherIcon name="layers" class="w-4 h-4" />
+              <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                Showing {{ paginatedRows.length }} of {{ filteredRows.length }}
+              </span>
+            </div>
+            <!-- Pagination Controls -->
+            <div v-if="totalPages > 1" class="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                theme="gray"
+                size="sm"
+                @click="currentPage = Math.max(1, currentPage - 1)"
+                :disabled="currentPage <= 1"
+              >
+                <FeatherIcon name="chevron-left" class="w-4 h-4" />
+              </Button>
+              <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+                {{ currentPage }} / {{ totalPages }}
+              </span>
+              <Button
+                variant="ghost"
+                theme="gray"
+                size="sm"
+                @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                :disabled="currentPage >= totalPages"
+              >
+                <FeatherIcon name="chevron-right" class="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Enhanced Table Structure -->
-    <table class="border-separate border-spacing-0 w-full">
+    <!-- Enhanced Table Structure with Virtual Scrolling for Large Datasets -->
+    <div class="table-container relative">
+      <table class="border-separate border-spacing-0 w-full table-fixed">
       <thead>
         <tr class="sticky top-0 bg-white dark:bg-gray-900 z-20">
           <!-- Resource Header -->
@@ -153,7 +188,7 @@
       </thead>
       <tbody>
         <tr 
-          v-for="(row, rowIdx) in filteredRows" 
+          v-for="(row, rowIdx) in paginatedRows" 
           :key="row.id"
           :class="[
             'hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group',
@@ -262,23 +297,87 @@
               </div>
             </div>
 
-            <!-- Blocks Container with improved spacing -->
-            <div class="blocks-container min-h-[80px] space-y-1.5">
-              <TransitionGroup name="block" tag="div" class="space-y-1.5">
-                <DynamicTimelineBlock
-                  v-for="block in getBlocksForCell(row.id, column.key)"
-                  :key="block.id"
-                  :block="block"
-                  :config="config"
-                  :selected="selectedBlock?.id === block.id"
-                  :resizable="hasDateRange"
-                  @click="handleBlockClick"
-                  @dragstart="handleBlockDragStart"
-                  @dragend="handleBlockDragEnd"
-                  @resize="handleBlockResize"
-                  @contextmenu="handleBlockContextMenu"
-                />
-              </TransitionGroup>
+            <!-- Enhanced Blocks Container with Multiple Block Support -->
+            <div 
+              :class="[
+                'blocks-container relative transition-all duration-300',
+                getCellContainerClasses(row.id, column.key)
+              ]"
+            >
+              <!-- Block Count Indicator for Multiple Blocks -->
+              <div 
+                v-if="getBlocksForCell(row.id, column.key).length > 1"
+                class="absolute top-1 right-1 z-30 flex items-center gap-1"
+              >
+                <div 
+                  :class="[
+                    'px-1.5 py-0.5 rounded-full text-xs font-bold shadow-sm transition-all duration-200',
+                    getBlocksForCell(row.id, column.key).length > 3 
+                      ? 'bg-red-500 text-white animate-pulse' 
+                      : 'bg-blue-500 text-white'
+                  ]"
+                >
+                  {{ getBlocksForCell(row.id, column.key).length }}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  @click.stop="toggleCellExpansion(row.id, column.key)"
+                  class="w-5 h-5 p-0 hover:bg-white/80 dark:hover:bg-gray-700/80 rounded-full transition-all duration-200"
+                >
+                  <FeatherIcon 
+                    :name="isCellExpanded(row.id, column.key) ? 'chevron-up' : 'chevron-down'" 
+                    class="w-3 h-3" 
+                  />
+                </Button>
+              </div>
+
+              <!-- Blocks Display with Multiple Layout Options -->
+              <div :class="getBlocksDisplayClasses(row.id, column.key)">
+                <TransitionGroup 
+                  name="block" 
+                  tag="div" 
+                  :class="getTransitionGroupClasses(row.id, column.key)"
+                >
+                  <DynamicTimelineBlock
+                    v-for="(block, index) in getVisibleBlocksForCell(row.id, column.key)"
+                    :key="`${block.id}-${column.key}`"
+                    :block="block"
+                    :config="config"
+                    :selected="selectedBlock?.id === block.id"
+                    :resizable="hasDateRange && isBlockStartCell(block, column.key)"
+                    :spanning="isBlockSpanning(block)"
+                    :spanWidth="getBlockSpanWidth(block)"
+                    :isStartCell="isBlockStartCell(block, column.key)"
+                    :isEndCell="isBlockEndCell(block, column.key)"
+                    :cellPosition="getBlockCellPosition(block, column.key)"
+                    :compact="getCellViewMode(row.id, column.key) === 'compact'"
+                    :index="index"
+                    :total="getBlocksForCell(row.id, column.key).length"
+                    @click="handleBlockClick"
+                    @dragstart="handleBlockDragStart"
+                    @dragend="handleBlockDragEnd"
+                    @resize="handleBlockResize"
+                    @contextmenu="handleBlockContextMenu"
+                  />
+                </TransitionGroup>
+              </div>
+
+              <!-- Overflow Indicator -->
+              <div 
+                v-if="hasOverflowBlocks(row.id, column.key)"
+                class="mt-1 text-center"
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  @click.stop="toggleCellExpansion(row.id, column.key)"
+                  class="text-xs px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all duration-200"
+                >
+                  <FeatherIcon name="more-horizontal" class="w-3 h-3 mr-1" />
+                  +{{ getOverflowCount(row.id, column.key) }} more
+                </Button>
+              </div>
 
               <!-- Enhanced Add Block Button -->
               <Button
@@ -292,11 +391,23 @@
                 <FeatherIcon name="plus" class="w-4 h-4 mr-1" />
                 Add Block
               </Button>
+
+              <!-- Quick Add Button for Cells with Existing Blocks -->
+              <Button
+                v-else-if="hoveredCell.row === row.id && hoveredCell.date === column.key && getBlocksForCell(row.id, column.key).length > 0"
+                variant="ghost"
+                size="sm"
+                @click.stop="handleAddBlock(row.id, column.key)"
+                class="absolute bottom-1 right-1 w-6 h-6 p-0 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 opacity-80 hover:opacity-100 z-20"
+              >
+                <FeatherIcon name="plus" class="w-3 h-3" />
+              </Button>
             </div>
           </td>
         </tr>
       </tbody>
-    </table>
+      </table>
+    </div>
 
 
     <!-- Unassigned Blocks Panel -->
@@ -429,11 +540,13 @@ const emit = defineEmits([
   "cellClick",
   "assignTask",
   "toggleUnassignedPanel",
+  "dateNavigate",
+  "goToToday",
+  "refresh",
 ]);
 
 // Refs
 const gridContainer = ref(null);
-const timelineGrid = ref(null);
 
 // Reactive state
 const rowSearch = ref("");
@@ -448,8 +561,10 @@ const hoveredCell = ref({
 });
 const showUnassignedPanel = computed(() => props.showUnassignedPanel);
 const autoRefresh = ref(false);
-const scrollLeft = ref(0);
-const scrollTop = ref(0);
+
+// Multiple blocks management
+const expandedCells = ref(new Set());
+const cellViewMode = ref(new Map()); // 'stacked', 'compact', 'list'
 
 // Unassigned panel state
 const unassignedPanelPosition = ref({
@@ -457,10 +572,6 @@ const unassignedPanelPosition = ref({
   y: window.innerHeight / 2,
 });
 
-// Grid configuration
-const rowHeight = 120;
-const columnWidth = 160;
-const headerHeight = 100;
 
 // View modes
 const viewModes = [
@@ -471,6 +582,7 @@ const viewModes = [
 
 // Computed properties
 const filteredRows = computed(() => {
+  if (!Array.isArray(props.rows)) return [];
   if (!rowSearch.value) return props.rows;
   const search = rowSearch.value.toLowerCase();
   return props.rows.filter(
@@ -480,32 +592,108 @@ const filteredRows = computed(() => {
   );
 });
 
+// Pagination for large datasets
+const currentPage = ref(1);
+const itemsPerPage = computed(() => {
+  const rowCount = filteredRows.value.length;
+  if (rowCount <= 8) return rowCount; // Show all for small datasets
+  if (rowCount <= 20) return 10; // Moderate pagination
+  return 15; // Aggressive pagination for large datasets
+});
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredRows.value.length / itemsPerPage.value);
+});
+
+const paginatedRows = computed(() => {
+  if (filteredRows.value.length <= 8) {
+    return filteredRows.value; // No pagination for small datasets
+  }
+  
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredRows.value.slice(start, end);
+});
+
 const visibleDateColumns = computed(() => {
-  return props.dateColumns;
+  return Array.isArray(props.dateColumns) ? props.dateColumns : [];
 });
 
 const visibleBlocks = computed(() => {
+  if (!Array.isArray(props.blocks) || !Array.isArray(paginatedRows.value)) return [];
   return props.blocks.filter((block) =>
-    filteredRows.value.some((row) => row.id === block.row_id),
+    paginatedRows.value.some((row) => row.id === block.row_id),
   );
 });
 
+// Watch for pagination changes and reset to first page when search changes
+watch(rowSearch, () => {
+  currentPage.value = 1;
+});
+
+// Watch for block changes to update cell view modes
+watch(() => props.blocks, () => {
+  // Auto-expand cells with many blocks on initial load
+  props.blocks.forEach(block => {
+    if (block.row_id) {
+      const date = block.date || block[props.config?.block_to_date_field];
+      if (date) {
+        const dateStr = new Date(date).toISOString().split('T')[0];
+        const blocksInCell = getBlocksForCell(block.row_id, dateStr);
+        if (blocksInCell.length > 4) {
+          expandedCells.value.add(getCellId(block.row_id, dateStr));
+        }
+      }
+    }
+  });
+}, { deep: true });
+
 const unassignedBlocks = computed(() => {
+  if (!Array.isArray(props.blocks)) return [];
   return props.blocks.filter(
     (block) =>
       !block.row_id || block.row_id === null || block.row_id === undefined,
   );
 });
 
-const gridHeight = computed(() => {
-  return filteredRows.value.length * rowHeight;
-});
 
 const hasDateRange = computed(() => {
-  return (
-    props.config?.date_range_start_field && props.config?.date_range_end_field
-  );
+  const hasFields = props.config?.block_to_date_field && props.config?.date_range_end_field;
+  return hasFields;
 });
+
+// Helper function to format dates without timezone issues
+const formatDateForComparison = (dateInput) => {
+  if (!dateInput) return null;
+  
+  // Handle different date input formats
+  let dateObj;
+  if (typeof dateInput === 'string') {
+    // For datetime strings like "2025-07-09 00:00:00", parse without timezone conversion
+    if (dateInput.includes(' ')) {
+      // Split datetime and take only the date part
+      const datePart = dateInput.split(' ')[0];
+      dateObj = new Date(datePart + 'T00:00:00'); // Add time to prevent timezone issues
+    } else if (dateInput.includes('T')) {
+      // ISO format - use the date part
+      dateObj = new Date(dateInput.split('T')[0] + 'T00:00:00');
+    } else {
+      // Date only format
+      dateObj = new Date(dateInput + 'T00:00:00');
+    }
+  } else if (dateInput instanceof Date) {
+    dateObj = dateInput;
+  } else {
+    return null;
+  }
+  
+  // Return YYYY-MM-DD format using local date to avoid timezone shifts
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+};
 
 // Methods
 const getRowTitle = (row) => {
@@ -527,10 +715,12 @@ const getRowInitials = (row) => {
 };
 
 const getRowBlockCount = (rowId) => {
+  if (!Array.isArray(props.blocks)) return 0;
   return props.blocks.filter((block) => block.row_id === rowId).length;
 };
 
 const getRowWorkload = (rowId) => {
+  if (!Array.isArray(props.blocks)) return 0;
   const blocks = props.blocks.filter((block) => block.row_id === rowId);
   if (blocks.length === 0) return 0;
 
@@ -545,24 +735,38 @@ const getRowWorkload = (rowId) => {
 };
 
 const getBlocksForCell = (rowId, date) => {
-  return props.blocks.filter((block) => {
+  if (!Array.isArray(props.blocks)) return [];
+  const filteredBlocks = props.blocks.filter((block) => {
     if (block.row_id !== rowId) return false;
 
     const blockDate = block.date || block[props.config?.block_to_date_field];
     if (!blockDate) return false;
 
-    // Handle date ranges
-    if (hasDateRange.value && block.start_date && block.end_date) {
-      const cellDate = new Date(date);
-      const startDate = new Date(block.start_date);
-      const endDate = new Date(block.end_date);
-      return cellDate >= startDate && cellDate <= endDate;
+
+    // Handle date ranges - show blocks across their full date span
+    if (hasDateRange.value) {
+      // Use standardized fields from backend mapping first, fallback to config field names
+      const startDate = block.start_date || block[props.config?.block_to_date_field] || block.date;
+      const endDate = block.end_date || block[props.config?.date_range_end_field];
+      
+      if (startDate && endDate) {
+        // Normalize dates for comparison - fix timezone issue by using local date parsing
+        const blockStartDateStr = formatDateForComparison(startDate);
+        const blockEndDateStr = formatDateForComparison(endDate);
+        
+        // Show block if the cell date falls within the date range (inclusive)
+        const shouldShow = date >= blockStartDateStr && date <= blockEndDateStr;
+        return shouldShow;
+      }
     }
 
-    // Handle single dates
-    const blockDateStr = new Date(blockDate).toISOString().split("T")[0];
-    return blockDateStr === date;
+    // Handle single dates - fix timezone issue
+    const blockDateStr = formatDateForComparison(blockDate);
+    const shouldShow = blockDateStr === date;
+    return shouldShow;
   });
+  
+  return filteredBlocks;
 };
 
 const selectRow = (rowId) => {
@@ -622,13 +826,11 @@ const stopAutoRefresh = () => {
 
 // Drag and drop handlers
 const handleBlockDragStart = (block) => {
-  console.log("Block drag start:", block);
   draggedBlock.value = block;
   // The block component already sets the dataTransfer data
 };
 
 const handleBlockDragEnd = () => {
-  console.log("Block drag end");
   draggedBlock.value = null;
   dragOverCell.value = null;
 };
@@ -703,7 +905,7 @@ const handleDrop = (event, rowId, date) => {
     event.currentTarget.style.transform = "";
   }
 
-  console.log("Drop event triggered", { rowId, date, draggedBlock: draggedBlock.value });
+  // console.log("Drop event triggered", { rowId, date, draggedBlock: draggedBlock.value });
 
   // Try to get data from dataTransfer
   let taskData = null;
@@ -711,7 +913,7 @@ const handleDrop = (event, rowId, date) => {
     const transferData = event.dataTransfer.getData("application/json");
     if (transferData) {
       taskData = JSON.parse(transferData);
-      console.log("Task data from dataTransfer:", taskData);
+      // console.log("Task data from dataTransfer:", taskData);
     }
   } catch (e) {
     console.warn("Failed to parse drag data:", e);
@@ -723,20 +925,25 @@ const handleDrop = (event, rowId, date) => {
     const currentRowId = draggedBlock.value.row_id;
     let currentDate = draggedBlock.value.date || draggedBlock.value[props.config?.block_to_date_field];
     
-    // Ensure date format consistency - extract just the date part if it's a datetime
-    if (currentDate && typeof currentDate === 'string' && currentDate.includes(' ')) {
-      currentDate = currentDate.split(' ')[0];
-    }
-    if (currentDate && currentDate instanceof Date) {
-      currentDate = currentDate.toISOString().split('T')[0];
+    // Ensure date format consistency - handle both date and datetime fields
+    if (currentDate) {
+      if (typeof currentDate === 'string') {
+        // Handle datetime strings (YYYY-MM-DD HH:MM:SS) and date strings (YYYY-MM-DD)
+        if (currentDate.includes(' ')) {
+          currentDate = currentDate.split(' ')[0];
+        } else if (currentDate.includes('T')) {
+          currentDate = currentDate.split('T')[0];
+        }
+      } else if (currentDate instanceof Date) {
+        currentDate = currentDate.toISOString().split('T')[0];
+      }
     }
 
-    console.log("Moving block:", { blockId, currentRowId, currentDate, newRowId: rowId, newDate: date });
+    // console.log("Moving block:", { blockId, currentRowId, currentDate, newRowId: rowId, newDate: date });
 
     // Check if we're dropping in the same place
     if (currentRowId === rowId && currentDate === date) {
-      console.log("Same location, no move needed");
-      draggedBlock.value = null;
+            draggedBlock.value = null;
       return;
     }
 
@@ -756,7 +963,7 @@ const handleDrop = (event, rowId, date) => {
 
   // Handle data from dataTransfer (for blocks dragged from outside or backlog)
   if (taskData) {
-    console.log("Handling task data:", taskData);
+    // console.log("Handling task data:", taskData);
     
     // Check if this is an unassigned task being assigned
     if (taskData.unassigned || !taskData.row_id) {
@@ -775,17 +982,22 @@ const handleDrop = (event, rowId, date) => {
     const currentRowId = taskData.row_id;
     let currentDate = taskData.date || taskData[props.config?.block_to_date_field];
     
-    // Ensure date format consistency - extract just the date part if it's a datetime
-    if (currentDate && typeof currentDate === 'string' && currentDate.includes(' ')) {
-      currentDate = currentDate.split(' ')[0];
-    }
-    if (currentDate && currentDate instanceof Date) {
-      currentDate = currentDate.toISOString().split('T')[0];
+    // Ensure date format consistency - handle both date and datetime fields
+    if (currentDate) {
+      if (typeof currentDate === 'string') {
+        // Handle datetime strings (YYYY-MM-DD HH:MM:SS) and date strings (YYYY-MM-DD)
+        if (currentDate.includes(' ')) {
+          currentDate = currentDate.split(' ')[0];
+        } else if (currentDate.includes('T')) {
+          currentDate = currentDate.split('T')[0];
+        }
+      } else if (currentDate instanceof Date) {
+        currentDate = currentDate.toISOString().split('T')[0];
+      }
     }
 
     if (currentRowId === rowId && currentDate === date) {
-      console.log("Same location, no move needed");
-      return;
+            return;
     }
 
     emit("blockMove", {
@@ -807,11 +1019,41 @@ const handleBlockClick = (block, event) => {
   emit("blockClick", block.id);
 };
 
-const handleBlockResize = (block, newDuration) => {
-  emit("blockResize", {
+const handleBlockResize = (resizeData) => {
+  // Enhanced resize handling for date range blocks
+  // console.log('📏 Handling block resize:', resizeData);
+  
+  const { block, newDuration, direction, newStartDate, newEndDate } = resizeData;
+  
+  // Prepare the resize event data
+  const eventData = {
     blockId: block.id,
     newDuration,
-  });
+    direction
+  };
+  
+  // Add date fields based on configuration
+  if (hasDateRange.value) {
+    if (newStartDate) {
+      eventData.newStartDate = newStartDate;
+      eventData[props.config?.block_to_date_field] = newStartDate;
+    }
+    if (newEndDate) {
+      eventData.newEndDate = newEndDate;
+      eventData[props.config?.date_range_end_field] = newEndDate;
+    }
+  } else {
+    // For non-date-range blocks, just update the main date field
+    const startDate = new Date(block[props.config?.block_to_date_field] || block.date);
+    if (direction === 'right') {
+      const newEnd = new Date(startDate);
+      newEnd.setDate(startDate.getDate() + Math.floor(newDuration));
+      eventData.newEndDate = newEnd.toISOString().split('T')[0];
+    }
+  }
+  
+  emit("blockResize", eventData);
+  toast.success("Block has been resized successfully");
 };
 
 const handleBlockContextMenu = (block, event) => {
@@ -840,17 +1082,210 @@ const handleCellHover = (rowId, date, isEntering) => {
   }
 };
 
-// Scroll handling
-const handleScroll = (event) => {
-  scrollLeft.value = event.target.scrollLeft;
-  scrollTop.value = event.target.scrollTop;
+const getGridHeightClass = () => {
+  const rowCount = filteredRows.value.length;
+  
+  if (rowCount <= 4) {
+    return 'max-h-[32rem]'; // ~512px for up to 4 rows
+  } else if (rowCount <= 8) {
+    return 'max-h-[48rem]'; // ~768px for 5-8 rows
+  } else if (rowCount <= 12) {
+    return 'max-h-[64rem]'; // ~1024px for 9-12 rows
+  } else {
+    return 'max-h-[80vh]'; // Use viewport height for large datasets
+  }
+};
+
+// Multiple blocks management methods
+const getCellId = (rowId, date) => `${rowId}-${date}`;
+
+const toggleCellExpansion = (rowId, date) => {
+  const cellId = getCellId(rowId, date);
+  const currentlyExpanded = expandedCells.value.has(cellId);
+  
+  if (currentlyExpanded) {
+    expandedCells.value.delete(cellId);
+  } else {
+    expandedCells.value.add(cellId);
+  }
+};
+
+const isCellExpanded = (rowId, date) => {
+  return expandedCells.value.has(getCellId(rowId, date));
+};
+
+const getCellViewMode = (rowId, date) => {
+  const blocks = getBlocksForCell(rowId, date);
+  if (blocks.length <= 1) return 'single';
+  if (blocks.length <= 3) return 'stacked';
+  return isCellExpanded(rowId, date) ? 'expanded' : 'compact';
+};
+
+const getVisibleBlocksForCell = (rowId, date) => {
+  const blocks = getBlocksForCell(rowId, date);
+  if (!Array.isArray(blocks)) return [];
+  const viewMode = getCellViewMode(rowId, date);
+  
+  switch (viewMode) {
+    case 'single':
+    case 'stacked':
+    case 'expanded':
+      return blocks;
+    case 'compact':
+      return blocks.slice(0, 2); // Show first 2 blocks in compact mode
+    default:
+      return blocks;
+  }
+};
+
+const hasOverflowBlocks = (rowId, date) => {
+  const blocks = getBlocksForCell(rowId, date);
+  const visibleBlocks = getVisibleBlocksForCell(rowId, date);
+  if (!Array.isArray(blocks) || !Array.isArray(visibleBlocks)) return false;
+  return blocks.length > visibleBlocks.length;
+};
+
+const getOverflowCount = (rowId, date) => {
+  const blocks = getBlocksForCell(rowId, date);
+  const visibleBlocks = getVisibleBlocksForCell(rowId, date);
+  if (!Array.isArray(blocks) || !Array.isArray(visibleBlocks)) return 0;
+  return blocks.length - visibleBlocks.length;
+};
+
+const getCellContainerClasses = (rowId, date) => {
+  const blocks = getBlocksForCell(rowId, date);
+  const viewMode = getCellViewMode(rowId, date);
+  
+  const classes = ['min-h-[80px]'];
+  
+  if (Array.isArray(blocks) && blocks.length > 1) {
+    classes.push('multiple-blocks');
+  }
+  
+  switch (viewMode) {
+    case 'expanded':
+      classes.push('max-h-[300px]', 'overflow-y-auto', 'cell-expanded');
+      break;
+    case 'compact':
+      classes.push('max-h-[120px]', 'cell-compact');
+      break;
+    default:
+      classes.push('max-h-[200px]');
+  }
+  
+  return classes;
+};
+
+const getBlocksDisplayClasses = (rowId, date) => {
+  const viewMode = getCellViewMode(rowId, date);
+  
+  const classes = ['relative', 'w-full'];
+  
+  switch (viewMode) {
+    case 'expanded':
+      classes.push('space-y-1');
+      break;
+    case 'compact':
+      classes.push('space-y-0.5');
+      break;
+    default:
+      classes.push('space-y-1.5');
+  }
+  
+  return classes.join(' ');
+};
+
+const getTransitionGroupClasses = (rowId, date) => {
+  const viewMode = getCellViewMode(rowId, date);
+  
+  switch (viewMode) {
+    case 'expanded':
+      return 'space-y-1';
+    case 'compact':
+      return 'space-y-0.5';
+    default:
+      return 'space-y-1.5';
+  }
+};
+
+// Block positioning helper functions
+const isBlockStartCell = (block, dateKey) => {
+  if (!hasDateRange.value || !block) return true;
+  
+  // Use standardized start_date from backend mapping
+  const blockStartDate = block.start_date || block[props.config?.block_to_date_field];
+  if (!blockStartDate) return false;
+  
+  const startDateStr = formatDateForComparison(blockStartDate);
+  return startDateStr === dateKey;
+};
+
+const isBlockEndCell = (block, dateKey) => {
+  if (!hasDateRange.value || !block) return true;
+  
+  // Use standardized end_date from backend mapping
+  const blockEndDate = block.end_date || block[props.config?.date_range_end_field];
+  if (!blockEndDate) return false;
+  
+  const endDateStr = formatDateForComparison(blockEndDate);
+  return endDateStr === dateKey;
+};
+
+const getBlockCellPosition = (block, dateKey) => {
+  if (!hasDateRange.value || !block) return 'single';
+  
+  const isStart = isBlockStartCell(block, dateKey);
+  const isEnd = isBlockEndCell(block, dateKey);
+  
+  if (isStart && isEnd) return 'single';
+  if (isStart) return 'start';
+  if (isEnd) return 'end';
+  return 'middle';
+};
+
+const isBlockSpanning = (block) => {
+  if (!hasDateRange.value || !block) return false;
+  
+  // Use standardized fields from backend mapping
+  const startDate = block.start_date || block[props.config?.block_to_date_field];
+  const endDate = block.end_date || block[props.config?.date_range_end_field];
+  
+  if (!startDate || !endDate) return false;
+  
+  const startDateStr = formatDateForComparison(startDate);
+  const endDateStr = formatDateForComparison(endDate);
+  
+  // Check if block spans more than one day
+  return startDateStr !== endDateStr;
+};
+
+const getBlockSpanWidth = (block) => {
+  if (!isBlockSpanning(block)) return 1;
+  
+  // Use standardized fields from backend mapping
+  const startDate = block.start_date || block[props.config?.block_to_date_field];
+  const endDate = block.end_date || block[props.config?.date_range_end_field];
+  
+  if (!startDate || !endDate) return 1;
+  
+  const startDateStr = formatDateForComparison(startDate);
+  const endDateStr = formatDateForComparison(endDate);
+  
+  // Find the span in visible columns to ensure it matches the visible range
+  const visibleColumns = visibleDateColumns.value;
+  const startIdx = visibleColumns.findIndex(col => col.key === startDateStr);
+  const endIdx = visibleColumns.findIndex(col => col.key === endDateStr);
+  
+  if (startIdx === -1) return 1; // Start date not visible
+  if (endIdx === -1) {
+    // Block extends beyond visible range
+    return visibleColumns.length - startIdx;
+  }
+  
+  return Math.max(1, endIdx - startIdx + 1);
 };
 
 // Lifecycle
-// Panel management methods
-const toggleUnassignedPanel = () => {
-  showUnassignedPanel.value = !showUnassignedPanel.value;
-};
 
 onMounted(() => {
   // Set up resize observer for responsive behavior
@@ -941,6 +1376,14 @@ watch(
   animation: slideIn 0.3s ease-out;
 }
 
+.table-container {
+  contain: layout;
+}
+
+.dynamic-timeline-grid {
+  contain: layout style;
+}
+
 @keyframes slideIn {
   from {
     transform: translateX(100%) translateY(-50%);
@@ -988,40 +1431,8 @@ watch(
   transform: translateX(2px);
 }
 
-/* Improved scrollbar styling */
-.dynamic-timeline-grid::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
 
-.dynamic-timeline-grid::-webkit-scrollbar-track {
-  background: rgb(243 244 246);
-}
-
-.dynamic-timeline-grid::-webkit-scrollbar-thumb {
-  background: rgb(209 213 219);
-  border-radius: 4px;
-}
-
-.dynamic-timeline-grid::-webkit-scrollbar-thumb:hover {
-  background: rgb(156 163 175);
-}
-
-@media (prefers-color-scheme: dark) {
-  .dynamic-timeline-grid::-webkit-scrollbar-track {
-    background: rgb(31 41 55);
-  }
-  
-  .dynamic-timeline-grid::-webkit-scrollbar-thumb {
-    background: rgb(75 85 99);
-  }
-  
-  .dynamic-timeline-grid::-webkit-scrollbar-thumb:hover {
-    background: rgb(107 114 128);
-  }
-}
-
-/* Better responsive design */
+/* Enhanced responsive design with better scaling */
 @media (max-width: 1024px) {
   .resource-cell {
     max-width: 12rem;
@@ -1032,6 +1443,11 @@ watch(
   .date-header-cell {
     max-width: 7rem;
     min-width: 7rem;
+    font-size: 0.8125rem;
+  }
+  
+  .timeline-cell {
+    min-height: 110px;
   }
 }
 
@@ -1045,10 +1461,188 @@ watch(
   .date-header-cell {
     max-width: 6rem;
     min-width: 6rem;
+    font-size: 0.75rem;
   }
   
   .timeline-cell {
     min-height: 100px;
   }
+  
+  .blocks-container {
+    min-height: 70px;
+  }
+}
+
+@media (max-width: 640px) {
+  .resource-cell {
+    max-width: 8rem;
+    min-width: 8rem;
+  }
+  
+  .resource-header-cell,
+  .date-header-cell {
+    max-width: 5rem;
+    min-width: 5rem;
+  }
+  
+  .timeline-cell {
+    min-height: 90px;
+  }
+  
+  .grid-header {
+    padding: 0.75rem;
+  }
+  
+  .grid-header .flex {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+/* Improved scrolling behavior for large datasets */
+.dynamic-timeline-grid {
+  scroll-behavior: smooth;
+}
+
+.dynamic-timeline-grid::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.dynamic-timeline-grid::-webkit-scrollbar-track {
+  background: rgb(248 250 252);
+  border-radius: 6px;
+}
+
+.dynamic-timeline-grid::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225);
+  border-radius: 6px;
+  border: 2px solid rgb(248 250 252);
+}
+
+.dynamic-timeline-grid::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184);
+}
+
+@media (prefers-color-scheme: dark) {
+  .dynamic-timeline-grid::-webkit-scrollbar-track {
+    background: rgb(31 41 55);
+  }
+  
+  .dynamic-timeline-grid::-webkit-scrollbar-thumb {
+    background: rgb(75 85 99);
+    border-color: rgb(31 41 55);
+  }
+  
+  .dynamic-timeline-grid::-webkit-scrollbar-thumb:hover {
+    background: rgb(107 114 128);
+  }
+}
+
+/* Performance optimizations for large datasets */
+.timeline-cell {
+  contain: layout style;
+  will-change: background-color;
+}
+
+.blocks-container {
+  contain: layout;
+  position: relative;
+}
+
+.blocks-container.multiple-blocks {
+  contain: layout style;
+}
+
+/* Virtual scrolling hint for very large datasets */
+@media (min-width: 1024px) {
+  .dynamic-timeline-grid[data-row-count="large"] {
+    contain: strict;
+  }
+}
+
+/* Multiple blocks handling styles */
+.blocks-container.multiple-blocks {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.blocks-container.multiple-blocks::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+  border-radius: 1px;
+  z-index: 1;
+}
+
+/* Cell expansion styles */
+.cell-expanded {
+  animation: expandCell 0.3s ease-out;
+}
+
+.cell-compact {
+  animation: compactCell 0.3s ease-out;
+}
+
+@keyframes expandCell {
+  from {
+    max-height: 120px;
+  }
+  to {
+    max-height: 300px;
+  }
+}
+
+@keyframes compactCell {
+  from {
+    max-height: 300px;
+  }
+  to {
+    max-height: 120px;
+  }
+}
+
+/* Enhanced block count indicator */
+.blocks-container .absolute.top-1.right-1 {
+  backdrop-filter: blur(4px);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  padding: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .blocks-container .absolute.top-1.right-1 {
+    background: rgba(17, 24, 39, 0.9);
+  }
+}
+
+/* Overflow indicator styling */
+.blocks-container .mt-1.text-center {
+  border-top: 1px solid rgba(229, 231, 235, 0.5);
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .blocks-container .mt-1.text-center {
+    border-top-color: rgba(75, 85, 99, 0.5);
+  }
+}
+
+/* Quick add button enhancement */
+.blocks-container .absolute.bottom-1.right-1 {
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.blocks-container .absolute.bottom-1.right-1:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 </style>

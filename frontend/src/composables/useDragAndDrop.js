@@ -39,7 +39,7 @@ export function useDragAndDrop() {
     }
   }
 
-  // Handle dropping task
+  // Handle dropping task with enhanced date/datetime support
   const onDrop = async (target) => {
     if (!draggedTask.value || !target) return
 
@@ -51,18 +51,50 @@ export function useDragAndDrop() {
         end_date: target.date // Will be adjusted based on task duration
       }
 
-      // If dropping in timeline, calculate end date based on task duration
-      if (target.date && draggedTask.value.duration) {
-        const startDate = new Date(target.date)
-        const endDate = new Date(startDate)
-        endDate.setHours(endDate.getHours() + draggedTask.value.duration)
-        updates.end_date = endDate.toISOString().split('T')[0]
+      // Enhanced date handling for both date and datetime fields
+      if (target.date) {
+        let targetDate = target.date
+        
+        // Normalize date format - handle both date and datetime strings
+        if (typeof targetDate === 'string') {
+          if (targetDate.includes(' ')) {
+            targetDate = targetDate.split(' ')[0] // Extract date part from datetime
+          } else if (targetDate.includes('T')) {
+            targetDate = targetDate.split('T')[0] // Extract date part from ISO datetime
+          }
+        } else if (targetDate instanceof Date) {
+          targetDate = targetDate.toISOString().split('T')[0]
+        }
+        
+        updates.start_date = targetDate
+        
+        // Calculate end date based on task duration
+        if (draggedTask.value.duration) {
+          const startDate = new Date(targetDate)
+          const endDate = new Date(startDate)
+          
+          // Handle different duration types
+          if (typeof draggedTask.value.duration === 'number') {
+            if (draggedTask.value.duration >= 1) {
+              // Duration in days
+              endDate.setDate(startDate.getDate() + Math.floor(draggedTask.value.duration))
+            } else {
+              // Duration in hours
+              endDate.setHours(endDate.getHours() + (draggedTask.value.duration * 24))
+            }
+          }
+          
+          updates.end_date = endDate.toISOString().split('T')[0]
+        } else {
+          updates.end_date = targetDate // Single day task
+        }
       }
 
       await moveTaskResource.submit(updates)
 
     } catch (error) {
       console.error('Error moving task:', error)
+      handleApiError(error)
     }
   }
 

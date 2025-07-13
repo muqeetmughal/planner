@@ -347,6 +347,7 @@
           @blockMove="handleBlockMove"
           @blockClick="handleBlockClick"
           @addBlock="handleAddBlock"
+          @blockResize="handleBlockResize"
           @assignTask="handleAssignTask"
           @toggleUnassignedPanel="toggleUnassignedPanel"
           class="enhanced-grid"
@@ -681,6 +682,8 @@ const loadTimelineData = async () => {
       .toISOString()
       .split("T")[0];
 
+    // console.log('📊 Loading timeline data:', props.configuration.name, startDate, endDate);
+
     const response = await call("planner.api.get_timeline_data", {
       configuration_name: props.configuration.name,
       start_date: startDate,
@@ -688,16 +691,57 @@ const loadTimelineData = async () => {
       filters: {},
     });
 
+    // console.log('📊 Timeline data response:', response);
+
     if (response.success) {
       config.value = response.config;
       rows.value = response.rows || [];
       blocks.value = response.blocks || [];
+      
+      // console.log('✅ Timeline data loaded successfully:', config.value?.name, rows.value.length, blocks.value.length);
     } else {
-      throw new Error(response.error || "Failed to load timeline data");
+      // Handle API errors gracefully
+      // console.error('❌ Timeline API Error:', response.error);
+      
+      // Check if it's a logging/truncation error but data might still be available
+      if (response.error && response.error.includes('get truncated')) {
+        // console.log('⚠️ Data might be available despite logging error, checking...');
+        
+        // Try to use any partial data that might be available
+        if (response.rows && response.rows.length > 0) {
+          rows.value = response.rows;
+          // console.log('📊 Using available rows data:', rows.value.length);
+        }
+        
+        if (response.blocks && response.blocks.length > 0) {
+          blocks.value = response.blocks;
+          // console.log('📦 Using available blocks data:', blocks.value.length);
+        }
+        
+        if (response.config) {
+          config.value = response.config;
+          // console.log('🔧 Using available config data');
+        }
+        
+        // If we have any data, consider it a partial success
+        if (rows.value.length > 0 || blocks.value.length > 0) {
+          // console.log('✅ Partial data recovery successful');
+          error.value = null; // Clear error since we have data
+          return;
+        }
+      }
+      
+      // Set error for true failures
+      error.value = response.error || "Failed to load timeline data";
     }
   } catch (err) {
+    // console.error("💥 Timeline data loading error:", err);
     error.value = err.message || "Failed to load timeline data";
-    console.error("Error loading timeline data:", err);
+    
+    // Reset data on true errors
+    config.value = null;
+    rows.value = [];
+    blocks.value = [];
   } finally {
     loading.value = false;
   }
@@ -782,7 +826,7 @@ const handleBlockMove = async (data) => {
       throw new Error(response.error || "Failed to move block");
     }
   } catch (err) {
-    console.error("Error moving block:", err);
+    // console.error("Error moving block:", err);
     toast.error("Failed to move block: " + err.message);
   }
 };
@@ -800,11 +844,37 @@ const handleAddBlock = (data) => {
 
 const handleBlockUpdate = async (data) => {
   try {
-    console.log("Update block:", data);
+    // console.log("Update block:", data);
     closeBlockDetails();
     await loadTimelineData();
   } catch (err) {
-    console.error("Error updating block:", err);
+    // console.error("Error updating block:", err);
+  }
+};
+
+const handleBlockResize = async (data) => {
+  try {
+    // console.log("Resize block:", data);
+    
+    const response = await call("planner.api.update_block_date_range", {
+      block_doctype: config.value.block_doctype,
+      block_name: data.blockId,
+      new_duration: data.newDuration,
+      new_start_date: data.newStartDate,
+      new_end_date: data.newEndDate,
+      config_name: config.value.name,
+      direction: data.direction
+    });
+
+    if (response.success) {
+      await loadTimelineData();
+      toast.success("Block duration updated successfully");
+    } else {
+      throw new Error(response.error || "Failed to update block duration");
+    }
+  } catch (err) {
+    //console.error("Error resizing block:", err);
+    toast.error("Failed to update block duration: " + err.message);
   }
 };
 
@@ -856,7 +926,7 @@ const handleCreateBlock = async () => {
       iconClasses: "text-green-600",
     });
   } catch (error) {
-    console.error("Error creating block:", error);
+    // console.error("Error creating block:", error);
     toast({
       title: "Error",
       text: "Failed to create block",
@@ -888,7 +958,7 @@ const handleAssignTask = async (data) => {
       iconClasses: "text-green-600",
     });
   } catch (error) {
-    console.error("Error assigning task:", error);
+    // console.error("Error assigning task:", error);
     toast({
       title: "Error",
       text: "Failed to assign task",
@@ -907,6 +977,7 @@ watch(
   () => props.configuration,
   () => {
     if (props.configuration) {
+      // console.log('👀 Configuration changed:', props.configuration);
       loadTimelineData();
     }
   },

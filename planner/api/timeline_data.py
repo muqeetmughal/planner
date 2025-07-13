@@ -14,6 +14,9 @@ def get_timeline_data(configuration_name, start_date=None, end_date=None, filter
 		config = frappe.get_doc("Timeline Configuration", configuration_name)
 		if not config.is_active:
 			frappe.throw(_("Timeline Configuration is not active"))
+		
+		# Debug configuration (safe)
+		# # frappe.log_error(f"🔧 Config loaded: {config.name}", "Timeline Config Debug")
 
 		# Parse filters
 		if isinstance(filters, str):
@@ -32,8 +35,17 @@ def get_timeline_data(configuration_name, start_date=None, end_date=None, filter
 
 		# Get block entities (e.g., Work Orders)
 		blocks = get_block_entities(config, start_date, end_date, filters)
+		
+		# Debug blocks (safe logging)
+		if blocks:
+			sample_block = blocks[0] if blocks else None
+			sample_info = f"first_block_id: {sample_block.get('name') if sample_block else 'None'}"
+			# frappe.log_error(f"📦 Blocks loaded: {len(blocks)}, {sample_info}", "Timeline Blocks Debug")
+		else:
+			pass  # No blocks found
+			# frappe.log_error("📦 No blocks loaded", "Timeline Blocks Debug")
 
-		return {
+		result = {
 			"success": True,
 			"config": {
 				"name": config.name,
@@ -41,13 +53,17 @@ def get_timeline_data(configuration_name, start_date=None, end_date=None, filter
 				"description": config.description,
 				"row_doctype": config.row_doctype,
 				"block_doctype": config.block_doctype,
+				"block_to_date_field": config.block_to_date_field,
+				"date_range_end_field": config.date_range_end_field,
+				"block_duration_field": config.block_duration_field,
+				"block_status_field": config.block_status_field,
+				"block_priority_field": config.block_priority_field,
 				"field_mappings": {
 					"row_to_block_field": config.row_to_block_field,
 					"block_to_date_field": config.block_to_date_field,
 					"row_label_field": config.row_label_field,
 					"block_label_field": config.block_label_field,
 					"block_color_field": config.block_color_field,
-					"date_range_start_field": config.date_range_start_field,
 					"date_range_end_field": config.date_range_end_field,
 					"block_duration_field": config.block_duration_field,
 					"block_status_field": config.block_status_field,
@@ -61,6 +77,11 @@ def get_timeline_data(configuration_name, start_date=None, end_date=None, filter
 				"end_date": end_date
 			}
 		}
+		
+		# Debug final result (safe)
+		# frappe.log_error(f"🎯 Final result - rows: {len(rows)}, blocks: {len(blocks)}", "Timeline Result Debug")
+		
+		return result
 
 	except Exception as e:
 		frappe.log_error(frappe.get_traceback(), "Timeline Data Error")
@@ -121,7 +142,7 @@ def get_row_entities(config, filters=None):
 		return formatted_rows
 
 	except Exception as e:
-		frappe.log_error(f"Error getting row entities: {str(e)}", "Timeline Row Entities Error")
+		# frappe.log_error(f"Error getting row entities: {str(e)}", "Timeline Row Entities Error")
 		return []
 
 def get_block_entities(config, start_date, end_date, filters=None):
@@ -134,17 +155,21 @@ def get_block_entities(config, start_date, end_date, filters=None):
 
 		# Add date range filter
 		date_field = config.block_to_date_field
-		if config.date_range_start_field and config.date_range_end_field:
-			# Handle date range blocks
-			block_filters.update({
-				config.date_range_start_field: ["<=", end_date],
+		# frappe.log_error(f"📅 Date filter setup - field: {date_field}", "Timeline Date Filter Debug")
+		
+		if config.date_range_end_field:
+			# Handle date range blocks (block_to_date_field is start, date_range_end_field is end)
+			date_filters = {
+				config.block_to_date_field: ["<=", end_date],
 				config.date_range_end_field: [">=", start_date]
-			})
+			}
+			block_filters.update(date_filters)
+			# frappe.log_error(f"📅 Using date range filters", "Timeline Date Range Filter")
 		else:
 			# Handle single date blocks
-			block_filters.update({
-				date_field: ["between", [start_date, end_date]]
-			})
+			single_filter = {date_field: ["between", [start_date, end_date]]}
+			block_filters.update(single_filter)
+			# frappe.log_error(f"📅 Using single date filter", "Timeline Single Date Filter")
 
 		# Get required fields
 		fields = [
@@ -157,7 +182,6 @@ def get_block_entities(config, start_date, end_date, filters=None):
 		# Add optional fields if they exist
 		optional_fields = [
 			config.block_color_field,
-			config.date_range_start_field,
 			config.date_range_end_field,
 			config.block_duration_field,
 			config.block_status_field,
@@ -189,19 +213,42 @@ def get_block_entities(config, start_date, end_date, filters=None):
 		# Format block data
 		formatted_blocks = []
 		for block in blocks:
+			# Format the main date field consistently  
+			main_date = block.get(config.block_to_date_field)
+			if main_date and not isinstance(main_date, str) and hasattr(main_date, 'strftime'):
+				main_date = main_date.strftime("%Y-%m-%d %H:%M:%S")
+			
 			formatted_block = {
 				"id": block.name,
 				"name": block.name,
 				"label": block.get(config.block_label_field) or block.name,
 				"doctype": config.block_doctype,
 				"row_id": block.get(config.row_to_block_field),
-				"date": block.get(config.block_to_date_field)
+				"date": main_date
 			}
 
-			# Add date range if available
-			if config.date_range_start_field and config.date_range_end_field:
-				formatted_block["start_date"] = block.get(config.date_range_start_field)
-				formatted_block["end_date"] = block.get(config.date_range_end_field)
+			# Add date range if available (block_to_date_field is start, date_range_end_field is end)
+			if config.date_range_end_field:
+				start_date_val = block.get(config.block_to_date_field)
+				end_date_val = block.get(config.date_range_end_field)
+				
+				# Format dates consistently - ensure they're in YYYY-MM-DD HH:MM:SS format for frontend
+				if start_date_val:
+					if isinstance(start_date_val, str):
+						formatted_block["start_date"] = start_date_val
+					else:
+						formatted_block["start_date"] = start_date_val.strftime("%Y-%m-%d %H:%M:%S") if hasattr(start_date_val, 'strftime') else str(start_date_val)
+				
+				if end_date_val:
+					if isinstance(end_date_val, str):
+						formatted_block["end_date"] = end_date_val
+					else:
+						formatted_block["end_date"] = end_date_val.strftime("%Y-%m-%d %H:%M:%S") if hasattr(end_date_val, 'strftime') else str(end_date_val)
+				
+				# Safe logging for date range
+				if start_date_val and end_date_val:
+					pass  # Date range validation successful
+					# frappe.log_error(f"📦 Block {block.name[:20]} date range set", "Timeline Block Date Range")
 
 			# Add optional fields
 			if config.block_duration_field:
@@ -223,10 +270,12 @@ def get_block_entities(config, start_date, end_date, filters=None):
 
 			formatted_blocks.append(formatted_block)
 
+		# Final count logging
+		# frappe.log_error(f"🎯 Total formatted blocks: {len(formatted_blocks)}", "Timeline Formatted Blocks")
 		return formatted_blocks
 
 	except Exception as e:
-		frappe.log_error(f"Error getting block entities: {str(e)}", "Timeline Block Entities Error")
+		# frappe.log_error(f"Error getting block entities: {str(e)}", "Timeline Block Entities Error")
 		return []
 
 @frappe.whitelist()
@@ -256,9 +305,9 @@ def update_block_assignment(block_doctype, block_name, new_row_assignment, new_d
 			setattr(block_doc, config.block_to_date_field, getdate(new_date))
 
 		# Handle date range updates if applicable
-		if config and config.date_range_start_field and config.date_range_end_field and new_date:
+		if config and config.date_range_end_field and new_date:
 			# If block has date range, update both start and end dates
-			current_start = getattr(block_doc, config.date_range_start_field, None)
+			current_start = getattr(block_doc, config.block_to_date_field, None)
 			current_end = getattr(block_doc, config.date_range_end_field, None)
 
 			if current_start and current_end:
@@ -267,7 +316,8 @@ def update_block_assignment(block_doctype, block_name, new_row_assignment, new_d
 				new_start_date = getdate(new_date)
 				new_end_date = add_days(new_start_date, duration)
 
-				setattr(block_doc, config.date_range_start_field, new_start_date)
+				# block_to_date_field is the start date
+				setattr(block_doc, config.block_to_date_field, new_start_date)
 				setattr(block_doc, config.date_range_end_field, new_end_date)
 
 		# Save the document
@@ -333,7 +383,6 @@ def create_sample_workstation_configuration():
 			"row_label_field": "workstation_name",
 			"block_label_field": "production_item",
 			"block_color_field": "status",
-			"date_range_start_field": "planned_start_date",
 			"date_range_end_field": "planned_end_date",
 			"block_duration_field": "expected_time",
 			"block_status_field": "status",
@@ -351,6 +400,81 @@ def create_sample_workstation_configuration():
 
 	except Exception as e:
 		frappe.log_error(frappe.get_traceback(), "Create Sample Configuration Error")
+		frappe.db.rollback()
+		return {
+			"success": False,
+			"error": str(e)
+		}
+
+@frappe.whitelist()
+def update_block_date_range(block_doctype, block_name, new_duration=None, new_start_date=None, new_end_date=None, config_name=None, direction='right'):
+	"""Update block date range for resizing operations"""
+	try:
+		# Get the block document
+		block_doc = frappe.get_doc(block_doctype, block_name)
+
+		# Get configuration if provided
+		config = None
+		if config_name:
+			config = frappe.get_doc("Timeline Configuration", config_name)
+
+		# Store old values for logging
+		old_start_date = None
+		old_end_date = None
+		old_duration = None
+
+		if config and config.date_range_end_field:
+			# Handle date range blocks (block_to_date_field is start, date_range_end_field is end)
+			old_start_date = getattr(block_doc, config.block_to_date_field, None)
+			old_end_date = getattr(block_doc, config.date_range_end_field, None)
+			
+			if config.block_duration_field:
+				old_duration = getattr(block_doc, config.block_duration_field, None)
+
+			# Update start date if provided (using block_to_date_field)
+			if new_start_date:
+				setattr(block_doc, config.block_to_date_field, getdate(new_start_date))
+
+			# Update end date if provided
+			if new_end_date:
+				setattr(block_doc, config.date_range_end_field, getdate(new_end_date))
+
+			# Update duration if provided and field exists
+			if new_duration and config.block_duration_field:
+				setattr(block_doc, config.block_duration_field, new_duration)
+
+			# block_to_date_field is already updated above as the start date
+
+		else:
+			# Handle single date blocks with duration
+			if config and config.block_duration_field and new_duration:
+				old_duration = getattr(block_doc, config.block_duration_field, None)
+				setattr(block_doc, config.block_duration_field, new_duration)
+
+		# Save the document
+		block_doc.save(ignore_permissions=True)
+		frappe.db.commit()
+
+		# Log the change
+		frappe.log_error(
+			f"Block {block_name} resized - Duration: {old_duration} to {new_duration}, Dates: {old_start_date} - {old_end_date} to {new_start_date} - {new_end_date}",
+			"Block Resize Update"
+		)
+
+		return {
+			"success": True,
+			"message": "Block date range updated successfully",
+			"block": block_doc.as_dict(),
+			"old_start_date": old_start_date,
+			"new_start_date": new_start_date,
+			"old_end_date": old_end_date,
+			"new_end_date": new_end_date,
+			"old_duration": old_duration,
+			"new_duration": new_duration
+		}
+
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Update Block Date Range Error")
 		frappe.db.rollback()
 		return {
 			"success": False,

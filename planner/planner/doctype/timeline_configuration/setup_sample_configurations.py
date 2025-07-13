@@ -17,10 +17,12 @@ def create_timeline_configurations():
                 "block_doctype": "Work Order",
                 "row_to_block_field": "workstation",
                 "block_to_date_field": "planned_start_date",
+                "date_range_end_field": "planned_end_date",
                 "row_label_field": "workstation_name",
                 "block_label_field": "production_item",
                 "block_status_field": "status",
                 "block_priority_field": "priority",
+                "block_duration_field": "expected_time",
                 "is_active": 1
             })
             workstation_config.insert()
@@ -37,7 +39,8 @@ def create_timeline_configurations():
                     "row_doctype": "User",
                     "block_doctype": "Atlas Task",
                     "row_to_block_field": "_assign",
-                    "block_to_date_field": "exp_end_date",
+                    "block_to_date_field": "exp_start_date",
+                    "date_range_end_field": "exp_end_date",
                     "row_label_field": "full_name",
                     "block_label_field": "subject",
                     "block_status_field": "status",
