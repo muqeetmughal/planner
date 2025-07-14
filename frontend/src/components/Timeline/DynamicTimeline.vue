@@ -1,168 +1,201 @@
 <template>
 	<div class="dynamic-timeline min-h-screen bg-gray-50">
-		<!-- Header -->
-		<div class="timeline-header mb-6 p-6 bg-white rounded-lg shadow border mx-6 mt-6">
-			<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-				<!-- Left Section -->
-				<div class="flex items-center gap-4">
-					<Button
-						variant="ghost"
-						@click="$emit('backToSelector')"
-						class="flex items-center gap-2"
-					>
-						<FeatherIcon name="arrow-left" class="w-4 h-4" />
-						Back to Configurations
-					</Button>
-
-					<div class="border-l pl-4">
-						<div class="flex items-center gap-3 mb-1">
-							<h1 class="text-xl font-semibold text-gray-900">
-								{{ config?.configuration_name || "Dynamic Timeline" }}
-							</h1>
-						</div>
-						<div class="flex items-center gap-2 text-sm text-gray-600">
-							<span class="px-2 py-1 bg-gray-100 rounded font-medium">
-								{{ config?.row_doctype }}
-							</span>
-							<FeatherIcon name="arrow-right" class="w-3 h-3" />
-							<span class="px-2 py-1 bg-gray-100 rounded font-medium">
-								{{ config?.block_doctype }}
-							</span>
-						</div>
-					</div>
-				</div>
-
-				<!-- Right Section -->
-				<div class="flex items-center gap-4">
-					<!-- Date Navigation -->
-					<div class="flex items-center gap-2 bg-white rounded-lg p-2 border">
-						<Button variant="ghost" size="sm" @click="navigateDate(-1)">
-							<FeatherIcon name="chevron-left" class="w-4 h-4" />
-						</Button>
-
-						<div class="px-4 py-2 text-center font-medium min-w-[200px]">
-							{{ formatDateRange() }}
-						</div>
-
-						<Button variant="ghost" size="sm" @click="navigateDate(1)">
-							<FeatherIcon name="chevron-right" class="w-4 h-4" />
-						</Button>
-
-						<div class="h-6 w-px bg-gray-300 mx-2"></div>
-
-						<Button variant="ghost" size="sm" @click="goToToday">
-							<FeatherIcon name="calendar" class="w-4 h-4 mr-2" />
-							Today
-						</Button>
-					</div>
-
-					<!-- View Mode Toggle -->
-					<div class="flex bg-gray-100 rounded-lg p-1">
-						<button
-							v-for="mode in viewModes"
-							:key="mode.value"
-							@click="currentViewMode = mode.value"
-							:class="[
-								'px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2',
-								currentViewMode === mode.value
-									? 'bg-white text-gray-900 shadow-sm'
-									: 'text-gray-600 hover:text-gray-900',
-							]"
-						>
-							<FeatherIcon :name="mode.icon" class="w-4 h-4" />
-							{{ mode.label }}
-						</button>
-					</div>
-
-					<!-- Unassigned Panel Toggle -->
-					<Button
-						variant="ghost"
-						size="sm"
-						@click="toggleUnassignedPanel"
-						:class="showUnassignedPanel ? 'bg-amber-50' : ''"
-					>
-						<FeatherIcon
-							name="inbox"
-							:class="['w-4 h-4', showUnassignedPanel ? 'text-amber-600' : '']"
-						/>
-					</Button>
-
-					<!-- Refresh Button -->
-					<Button
-						variant="ghost"
-						size="sm"
-						@click="refreshData"
-						:loading="loading"
-					>
-						<FeatherIcon
-							name="refresh-cw"
-							:class="['w-4 h-4', loading ? 'animate-spin' : '']"
-						/>
-					</Button>
-				</div>
-			</div>
-
-			<!-- Stats Bar -->
-			<div class="mt-4 p-4 bg-gray-50 rounded-lg border">
-				<div class="flex items-center justify-between text-sm">
+		<!-- Modern Enhanced Header -->
+		<div class="timeline-header bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
+			<div class="max-w-full mx-auto px-6 py-4">
+				<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+					<!-- Left Section -->
 					<div class="flex items-center gap-6">
-						<div class="flex items-center gap-2">
-							<div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-							<div>
-								<div class="font-semibold text-lg text-gray-800">
-									{{ rows.length }}
-								</div>
-								<div class="text-xs text-gray-600">
-									{{ config?.row_doctype || "Rows" }}
-								</div>
-							</div>
-						</div>
+						<Button
+							variant="ghost"
+							@click="$emit('backToSelector')"
+							class="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+						>
+							<FeatherIcon name="arrow-left" class="w-4 h-4" />
+							<span class="hidden sm:inline">Back</span>
+						</Button>
 
-						<div class="flex items-center gap-2">
-							<div class="w-3 h-3 bg-green-500 rounded-full"></div>
-							<div>
-								<div class="font-semibold text-lg text-gray-800">
-									{{ blocks.length }}
+						<div class="flex items-center gap-4">
+							<div class="flex items-center gap-3">
+								<div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+									<FeatherIcon name="calendar" class="w-4 h-4 text-white" />
 								</div>
-								<div class="text-xs text-gray-600">
-									{{ config?.block_doctype || "Blocks" }}
+								<div>
+									<h1 class="text-xl font-bold text-gray-900">
+										{{ config?.configuration_name || "Dynamic Planner" }}
+									</h1>
+									<div class="flex items-center gap-2 text-sm text-gray-500">
+										<span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+											{{ config?.row_doctype }}
+										</span>
+										<FeatherIcon name="arrow-right" class="w-3 h-3" />
+										<span class="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">
+											{{ config?.block_doctype }}
+										</span>
+									</div>
 								</div>
-							</div>
-						</div>
-
-						<div class="flex items-center gap-2">
-							<div class="w-3 h-3 bg-amber-500 rounded-full"></div>
-							<div>
-								<div class="font-semibold text-lg text-gray-800">
-									{{ unassignedBlocks.length }}
-								</div>
-								<div class="text-xs text-gray-600">Unassigned</div>
 							</div>
 						</div>
 					</div>
 
-					<div class="flex items-center gap-2 text-gray-600">
-						<FeatherIcon name="clock" class="w-4 h-4" />
-						<span>{{ formatDateRange() }}</span>
+					<!-- Right Section -->
+					<div class="flex items-center gap-3">
+						<!-- Date Navigation -->
+						<div class="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+							<Button variant="ghost" size="sm" @click="navigateDate(-1)" class="h-8 w-8 p-0">
+								<FeatherIcon name="chevron-left" class="w-4 h-4" />
+							</Button>
+
+							<div class="px-4 py-1.5 text-center font-semibold text-gray-900 min-w-[200px]">
+								{{ formatDateRange() }}
+							</div>
+
+							<Button variant="ghost" size="sm" @click="navigateDate(1)" class="h-8 w-8 p-0">
+								<FeatherIcon name="chevron-right" class="w-4 h-4" />
+							</Button>
+						</div>
+
+						<Button 
+							variant="outline" 
+							size="sm" 
+							@click="goToToday"
+							class="text-blue-600 border-blue-200 hover:bg-blue-50"
+						>
+							<FeatherIcon name="calendar" class="w-4 h-4 mr-1" />
+							<span class="hidden sm:inline">Today</span>
+						</Button>
+
+						<!-- View Mode Toggle -->
+						<div class="flex bg-gray-100 rounded-lg p-1">
+							<button
+								v-for="mode in viewModes"
+								:key="mode.value"
+								@click="currentViewMode = mode.value"
+								:class="[
+									'px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2',
+									currentViewMode === mode.value
+										? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'
+										: 'text-gray-600 hover:text-gray-900 hover:bg-gray-50',
+								]"
+							>
+								<FeatherIcon :name="mode.icon" class="w-4 h-4" />
+								<span class="hidden sm:inline">{{ mode.label }}</span>
+							</button>
+						</div>
+
+						<!-- Action Buttons -->
+						<div class="flex items-center gap-2">
+							<Button
+								variant="ghost"
+								size="sm"
+								@click="toggleUnassignedPanel"
+								:class="[
+									'relative',
+									showUnassignedPanel ? 'bg-amber-50 text-amber-700' : 'text-gray-600'
+								]"
+							>
+								<FeatherIcon name="inbox" class="w-4 h-4" />
+								<span v-if="unassignedBlocks.length > 0" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+									{{ unassignedBlocks.length }}
+								</span>
+							</Button>
+
+							<Button
+								variant="ghost"
+								size="sm"
+								@click="refreshData"
+								:disabled="loading"
+								class="text-gray-600 hover:text-gray-900"
+							>
+								<FeatherIcon
+									name="refresh-cw"
+									:class="['w-4 h-4', loading ? 'animate-spin' : '']"
+								/>
+							</Button>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<!-- Loading State -->
-		<div v-if="loading" class="flex items-center justify-center py-16">
-			<div class="bg-white rounded-lg p-6 shadow border">
-				<div class="flex items-center gap-4">
-					<div
-						class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"
-					></div>
-					<div>
-						<div class="font-medium text-gray-900 mb-1">
-							Loading Timeline Data
+			<!-- Enhanced Stats Bar -->
+			<div class="mx-6 mb-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+				<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+					<div class="flex flex-wrap items-center gap-6">
+						<div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+							<div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+								<FeatherIcon name="users" class="w-5 h-5 text-white" />
+							</div>
+							<div>
+								<div class="text-2xl font-bold text-blue-600">
+									{{ rows.length }}
+								</div>
+								<div class="text-sm text-blue-700 font-medium">
+									{{ config?.row_doctype || "Resources" }}
+								</div>
+							</div>
 						</div>
-						<div class="text-sm text-gray-600">
-							Please wait while we fetch your data...
+
+						<div class="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+							<div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+								<FeatherIcon name="calendar" class="w-5 h-5 text-white" />
+							</div>
+							<div>
+								<div class="text-2xl font-bold text-green-600">
+									{{ blocks.length }}
+								</div>
+								<div class="text-sm text-green-700 font-medium">
+									{{ config?.block_doctype || "Events" }}
+								</div>
+							</div>
 						</div>
+
+						<div v-if="unassignedBlocks.length > 0" class="flex items-center gap-3 p-3 bg-amber-50 rounded-lg">
+							<div class="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
+								<FeatherIcon name="inbox" class="w-5 h-5 text-white" />
+							</div>
+							<div>
+								<div class="text-2xl font-bold text-amber-600">
+									{{ unassignedBlocks.length }}
+								</div>
+								<div class="text-sm text-amber-700 font-medium">
+									Unassigned
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="flex items-center gap-3 text-sm text-gray-500">
+						<div class="flex items-center gap-1">
+							<FeatherIcon name="eye" class="w-4 h-4" />
+							<span>{{ currentViewMode }} view</span>
+						</div>
+						<div class="w-1 h-1 bg-gray-400 rounded-full"></div>
+						<div class="flex items-center gap-1">
+							<FeatherIcon name="clock" class="w-4 h-4" />
+							<span>Last updated just now</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		<!-- Enhanced Loading State -->
+		<div v-if="loading" class="flex items-center justify-center py-20">
+			<div class="bg-white rounded-xl p-8 shadow-lg border max-w-md w-full mx-6">
+				<div class="text-center">
+					<div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+						<div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+					</div>
+					<h3 class="text-lg font-semibold text-gray-900 mb-2">
+						Loading Timeline Data
+					</h3>
+					<p class="text-gray-600 mb-4">
+						Please wait while we fetch your {{ config?.configuration_name || 'timeline' }} data...
+					</p>
+					<div class="flex items-center justify-center gap-2">
+						<div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+						<div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+						<div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
 					</div>
 				</div>
 			</div>
@@ -232,24 +265,6 @@
 			</div>
 		</div>
 
-		<!-- Block Details Dialog -->
-		<Dialog
-			v-model="showBlockDetails"
-			:options="{
-				title: config?.block_doctype + ' Details',
-				size: 'large',
-			}"
-		>
-			<template #body-content>
-				<DynamicBlockDetails
-					v-if="selectedBlock"
-					:block="selectedBlock"
-					:config="config"
-					@close="closeBlockDetails"
-					@update="handleBlockUpdate"
-				/>
-			</template>
-		</Dialog>
 
 		<!-- Add Block Button -->
 		<div class="fixed bottom-6 right-6 z-40">
@@ -263,53 +278,107 @@
 			</Button>
 		</div>
 
-		<!-- Add Block Dialog -->
+		<!-- Dynamic Add Block Dialog -->
 		<Dialog
 			v-model="showAddBlockDialog"
 			:options="{
-				title: 'Add New Block',
+				title: `Add New ${config?.block_doctype || 'Block'}`,
 				size: 'large',
 			}"
 		>
 			<template #body-content>
-				<div class="space-y-4">
-					<div class="grid grid-cols-2 gap-4">
+				<div v-if="config" class="space-y-4">
+					<!-- Loading state for metadata -->
+					<div v-if="loading" class="text-center py-4">
+						<div class="text-sm text-gray-600">Loading form configuration...</div>
+					</div>
+					
+					<!-- Dynamic form based on block doctype -->
+					<div v-else class="space-y-4">
+						<div class="grid grid-cols-2 gap-4">
+							<FormControl
+								:label="getFieldLabel(config.block_label_field)"
+								v-model="newBlockForm.title"
+								:placeholder="`Enter ${config.block_label_field || 'title'}`"
+							/>
+							<FormControl
+								type="autocomplete"
+								:label="getFieldLabel(config.row_to_block_field)"
+								v-model="newBlockForm.row_assignment"
+								:options="rowOptions"
+								:placeholder="`Select ${config.row_doctype || 'row'}`"
+								required
+							/>
+						</div>
+						<div class="grid grid-cols-2 gap-4" v-if="config.block_priority_field">
+							<FormControl
+								type="select"
+								:label="getFieldLabel(config.block_priority_field)"
+								v-model="newBlockForm.priority"
+								:options="['Low', 'Medium', 'High']"
+							/>
+						</div>
 						<FormControl
-							label="Title"
-							v-model="newBlockForm.title"
-							placeholder="Enter block title"
+							v-if="config.block_description_field"
+							type="textarea"
+							:label="getFieldLabel(config.block_description_field)"
+							v-model="newBlockForm.description"
+							placeholder="Enter description"
+						/>
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-1">
+									{{ getFieldLabel(config.block_to_date_field) }}
+									<span class="text-red-500">*</span>
+								</label>
+								<Input
+									v-if="getFieldType(config.block_to_date_field) === 'date'"
+									type="date"
+									:value="newBlockForm.start_date"
+									:placeholder="`Select ${getFieldLabel(config.block_to_date_field)}`"
+									@input="(v) => newBlockForm.start_date = v"
+								/>
+								<DateTimePicker
+									v-else
+									:value="newBlockForm.start_date"
+									:placeholder="`Select ${getFieldLabel(config.block_to_date_field)}`"
+									@update:modelValue="(v) => newBlockForm.start_date = v"
+								/>
+							</div>
+							<div v-if="config.date_range_end_field">
+								<label class="block text-sm font-medium text-gray-700 mb-1">
+									{{ getFieldLabel(config.date_range_end_field) }}
+								</label>
+								<Input
+									v-if="getFieldType(config.date_range_end_field) === 'date'"
+									type="date"
+									:value="newBlockForm.end_date"
+									:placeholder="`Select ${getFieldLabel(config.date_range_end_field)}`"
+									@input="(v) => newBlockForm.end_date = v"
+								/>
+								<DateTimePicker
+									v-else
+									:value="newBlockForm.end_date"
+									:placeholder="`Select ${getFieldLabel(config.date_range_end_field)}`"
+									@update:modelValue="(v) => newBlockForm.end_date = v"
+								/>
+							</div>
+						</div>
+						<FormControl
+							v-if="config.block_duration_field"
+							type="number"
+							:label="getFieldLabel(config.block_duration_field)"
+							v-model="newBlockForm.duration"
+							placeholder="Enter duration"
 						/>
 						<FormControl
+							v-if="config.block_status_field"
 							type="select"
-							label="Priority"
-							v-model="newBlockForm.priority"
-							:options="['Low', 'Medium', 'High']"
+							:label="getFieldLabel(config.block_status_field)"
+							v-model="newBlockForm.status"
+							:options="['Open', 'In Progress', 'Completed', 'Cancelled']"
 						/>
 					</div>
-					<FormControl
-						type="textarea"
-						label="Description"
-						v-model="newBlockForm.description"
-						placeholder="Enter block description"
-					/>
-					<div class="grid grid-cols-2 gap-4">
-						<FormControl
-							type="date"
-							label="Start Date"
-							v-model="newBlockForm.start_date"
-						/>
-						<FormControl
-							type="date"
-							label="End Date"
-							v-model="newBlockForm.end_date"
-						/>
-					</div>
-					<FormControl
-						type="number"
-						label="Duration (hours)"
-						v-model="newBlockForm.duration"
-						placeholder="Enter duration in hours"
-					/>
 				</div>
 			</template>
 			<template #actions>
@@ -317,7 +386,60 @@
 					Cancel
 				</Button>
 				<Button variant="solid" @click="handleCreateBlock">
-					Create Block
+					Create {{ config?.block_doctype || 'Block' }}
+				</Button>
+			</template>
+		</Dialog>
+
+		<!-- Unassigned Blocks Dialog -->
+		<Dialog
+			v-model="showUnassignedDialog"
+			:options="{
+				title: `Unassigned ${config?.block_doctype || 'Blocks'}`,
+				size: 'large',
+			}"
+		>
+			<template #body-content>
+				<div v-if="unassignedBlocks.length === 0" class="text-center py-8">
+					<FeatherIcon name="check-circle" class="w-12 h-12 text-green-500 mx-auto mb-4" />
+					<h3 class="text-lg font-medium text-gray-900 mb-2">All blocks are assigned!</h3>
+					<p class="text-gray-600">There are no unassigned {{ config?.block_doctype?.toLowerCase() || 'blocks' }} at the moment.</p>
+				</div>
+				
+				<div v-else class="space-y-3">
+					<p class="text-sm text-gray-600 mb-4">
+						{{ unassignedBlocks.length }} unassigned {{ config?.block_doctype?.toLowerCase() || 'blocks' }}. 
+						Click on a block to assign it to a {{ config?.row_doctype?.toLowerCase() || 'row' }}.
+					</p>
+					
+					<div 
+						v-for="block in unassignedBlocks" 
+						:key="block.id"
+						class="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+						@click="handleBlockClick(block.id)"
+					>
+						<div class="flex items-center justify-between">
+							<div>
+								<h4 class="font-medium text-gray-900">{{ block.label || block.name }}</h4>
+								<div class="flex items-center gap-4 mt-1 text-sm text-gray-500">
+									<div v-if="block.date" class="flex items-center gap-1">
+										<FeatherIcon name="calendar" class="w-3 h-3" />
+										<span>{{ new Date(block.date).toLocaleDateString() }}</span>
+									</div>
+									<div v-if="block.status" class="flex items-center gap-1">
+										<FeatherIcon name="info" class="w-3 h-3" />
+										<span>{{ block.status }}</span>
+									</div>
+								</div>
+							</div>
+							<FeatherIcon name="external-link" class="w-4 h-4 text-gray-400" />
+						</div>
+					</div>
+				</div>
+			</template>
+			<template #actions>
+				<Button variant="outline" @click="showUnassignedDialog = false">
+					Close
 				</Button>
 			</template>
 		</Dialog>
@@ -326,11 +448,10 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
-import { Button, FeatherIcon, Dialog, FormControl } from "frappe-ui";
+import { Button, FeatherIcon, Dialog, FormControl, DateTimePicker, Input } from "frappe-ui";
 import { call } from "frappe-ui";
 import DynamicTimelineGrid from "./DynamicTimelineGrid.vue";
 import DynamicTimelineDayView from "./DynamicTimelineDayView.vue";
-import DynamicBlockDetails from "./DynamicBlockDetails.vue";
 import { toast } from "../../composables/useToast";
 
 const props = defineProps({
@@ -344,17 +465,18 @@ const emit = defineEmits(["backToSelector"]);
 
 // Reactive state
 const config = ref(null);
+const fieldMetadata = ref({});
 const rows = ref([]);
 const blocks = ref([]);
 const loading = ref(false);
 const error = ref(null);
-const selectedBlock = ref(null);
 const showAddBlockDialog = ref(false);
 const addBlockData = ref(null);
 const showUnassignedPanel = ref(true);
+const showUnassignedDialog = ref(false);
 
 // View state
-const currentViewMode = ref("week");
+const currentViewMode = ref("day");
 const currentDate = ref(new Date());
 const newBlockForm = ref({
 	title: "",
@@ -363,6 +485,8 @@ const newBlockForm = ref({
 	start_date: "",
 	end_date: "",
 	duration: 1,
+	status: "Open",
+	row_assignment: "",
 });
 
 // Constants
@@ -374,12 +498,6 @@ const viewModes = [
 ];
 
 // Computed properties
-const showBlockDetails = computed({
-	get: () => !!selectedBlock.value,
-	set: (value) => {
-		if (!value) selectedBlock.value = null;
-	},
-});
 
 const dateColumns = computed(() => {
 	const columns = [];
@@ -432,6 +550,13 @@ const unassignedBlocks = computed(() => {
 	return blocks.value.filter((block) => !block.row_id);
 });
 
+const rowOptions = computed(() => {
+	return rows.value.map(row => ({
+		label: row.label || row.name,
+		value: row.name
+	}));
+});
+
 // Methods
 const loadTimelineData = async () => {
 	if (!props.configuration) return;
@@ -445,19 +570,28 @@ const loadTimelineData = async () => {
 			.toISOString()
 			.split("T")[0];
 
-		const response = await call("planner.api.get_timeline_data", {
-			configuration_name: props.configuration.name,
-			start_date: startDate,
-			end_date: endDate,
-			filters: {},
-		});
+		const [timelineResponse, metadataResponse] = await Promise.all([
+			call("planner.api.timeline_data.get_timeline_data", {
+				configuration_name: props.configuration.name,
+				start_date: startDate,
+				end_date: endDate,
+				filters: {},
+			}),
+			call("planner.api.timeline_data.get_configuration_field_metadata", {
+				configuration_name: props.configuration.name
+			})
+		]);
 
-		if (response.success) {
-			config.value = response.config;
-			rows.value = response.rows || [];
-			blocks.value = response.blocks || [];
+		if (timelineResponse.success) {
+			config.value = timelineResponse.config;
+			rows.value = timelineResponse.rows || [];
+			blocks.value = timelineResponse.blocks || [];
 		} else {
-			error.value = response.error || "Failed to load timeline data";
+			error.value = timelineResponse.error || "Failed to load timeline data";
+		}
+
+		if (metadataResponse.success) {
+			fieldMetadata.value = metadataResponse.field_metadata || {};
 		}
 	} catch (err) {
 		error.value = err.message || "Failed to load timeline data";
@@ -537,7 +671,7 @@ const handleBlockMove = async (data) => {
 			moveDate = new Date(data.newDateTime).toISOString().split('T')[0];
 		}
 		
-		const response = await call("planner.api.update_block_assignment", {
+		const response = await call("planner.api.timeline_data.update_block_assignment", {
 			block_doctype: config.value.block_doctype,
 			block_name: data.blockId,
 			new_row_assignment: data.newRowId,
@@ -559,26 +693,52 @@ const handleBlockMove = async (data) => {
 
 const handleBlockClick = (blockId) => {
 	const block = blocks.value.find((b) => b.id === blockId);
-	selectedBlock.value = block;
-};
-
-const handleAddBlock = (data) => {
-	showAddBlockDialog.value = true;
-	addBlockData.value = data;
-};
-
-const handleBlockUpdate = async (data) => {
-	try {
-		closeBlockDetails();
-		await loadTimelineData();
-	} catch (err) {
-		// Handle error
+	if (block) {
+		const doctype = config.value.block_doctype.toLowerCase().replace(/ /g, '-');
+		const url = `/app/${doctype}/${block.name}`;
+		window.open(url, '_blank');
 	}
 };
 
+const handleAddBlock = async (data) => {
+	addBlockData.value = data;
+	
+	// Ensure metadata is loaded before showing the dialog
+	if (!fieldMetadata.value || Object.keys(fieldMetadata.value).length === 0) {
+		try {
+			const metadataResponse = await call("planner.api.timeline_data.get_configuration_field_metadata", {
+				configuration_name: props.configuration.name
+			});
+			if (metadataResponse.success) {
+				fieldMetadata.value = metadataResponse.field_metadata || {};
+			}
+		} catch (err) {
+			console.error('Error loading field metadata:', err);
+		}
+	}
+	
+	showAddBlockDialog.value = true;
+	
+	// Pre-populate form with the selected date and row
+	if (data && data.date) {
+		// For date fields, use the string format directly
+		// For datetime fields, the DateTimePicker will handle the conversion
+		newBlockForm.value.start_date = data.date;
+		if (!config.value?.date_range_end_field) {
+			newBlockForm.value.end_date = data.date;
+		}
+	}
+	
+	// Pre-populate row assignment if provided
+	if (data && data.rowId) {
+		newBlockForm.value.row_assignment = data.rowId;
+	}
+};
+
+
 const handleBlockResize = async (data) => {
 	try {
-		const response = await call("planner.api.update_block_date_range", {
+		const response = await call("planner.api.timeline_data.update_block_date_range", {
 			block_doctype: config.value.block_doctype,
 			block_name: data.blockId,
 			new_duration: data.newDuration,
@@ -599,25 +759,95 @@ const handleBlockResize = async (data) => {
 	}
 };
 
-const closeBlockDetails = () => {
-	selectedBlock.value = null;
-};
 
 const handleCreateBlock = async () => {
 	try {
-		if (!newBlockForm.value.title.trim()) {
-			toast.error("Please enter a block title");
+
+		if (!newBlockForm.value.start_date) {
+			toast.error("Please select a start date");
 			return;
 		}
 
-		const blockData = {
-			...newBlockForm.value,
-			row_id: addBlockData.value?.rowId,
-			date: addBlockData.value?.date,
-			doctype: config.value.block_doctype,
+		if (!newBlockForm.value.row_assignment && !addBlockData.value?.rowId) {
+			toast.error(`Please select a ${config.value.row_doctype || 'row'}`);
+			return;
+		}
+
+		// Format dates properly for the API
+		const formatDateForAPI = (dateValue, fieldType) => {
+			if (!dateValue) return null;
+			
+			// If it's already a string, use it as is
+			if (typeof dateValue === 'string') {
+				return dateValue;
+			}
+			
+			// If it's a Date object, format appropriately
+			if (dateValue instanceof Date) {
+				if (fieldType === 'datetime') {
+					return dateValue.toISOString().slice(0, 19).replace('T', ' ');
+				} else {
+					return dateValue.toISOString().slice(0, 10);
+				}
+			}
+			
+			return dateValue;
 		};
 
-		await call("planner.api.create_block", blockData);
+		// Build dynamic block data based on configuration
+		const blockData = {
+			doctype: config.value.block_doctype,
+			[config.value.row_to_block_field]: newBlockForm.value.row_assignment || addBlockData.value?.rowId,
+			[config.value.block_to_date_field]: formatDateForAPI(
+				newBlockForm.value.start_date, 
+				getFieldType(config.value.block_to_date_field)
+			),
+		};
+
+		// Add title only if provided
+		if (newBlockForm.value.title && newBlockForm.value.title.trim()) {
+			blockData[config.value.block_label_field] = newBlockForm.value.title.trim();
+		}
+
+		// Add optional fields if they exist in config
+		if (config.value.block_description_field && newBlockForm.value.description) {
+			blockData[config.value.block_description_field] = newBlockForm.value.description;
+		}
+
+		if (config.value.block_priority_field && newBlockForm.value.priority) {
+			blockData[config.value.block_priority_field] = newBlockForm.value.priority;
+		}
+
+		if (config.value.block_status_field && newBlockForm.value.status) {
+			blockData[config.value.block_status_field] = newBlockForm.value.status;
+		}
+
+		if (config.value.block_duration_field && newBlockForm.value.duration) {
+			blockData[config.value.block_duration_field] = newBlockForm.value.duration;
+		}
+
+		if (config.value.date_range_end_field && newBlockForm.value.end_date) {
+			blockData[config.value.date_range_end_field] = formatDateForAPI(
+				newBlockForm.value.end_date, 
+				getFieldType(config.value.date_range_end_field)
+			);
+		}
+
+		if (config.value.date_range_start_field && newBlockForm.value.start_date) {
+			blockData[config.value.date_range_start_field] = formatDateForAPI(
+				newBlockForm.value.start_date, 
+				getFieldType(config.value.date_range_start_field)
+			);
+		}
+
+		const response = await call("planner.api.timeline_data.create_dynamic_block", {
+			block_data: blockData,
+			configuration_name: config.value.name
+		});
+
+		if (!response.success) {
+			throw new Error(response.error || 'Failed to create block');
+		}
 
 		// Reset form
 		newBlockForm.value = {
@@ -627,6 +857,8 @@ const handleCreateBlock = async () => {
 			start_date: "",
 			end_date: "",
 			duration: 1,
+			status: "Open",
+			row_assignment: "",
 		};
 
 		showAddBlockDialog.value = false;
@@ -635,9 +867,10 @@ const handleCreateBlock = async () => {
 		// Refresh data
 		await refreshData();
 
-		toast.success("Block created successfully");
+		toast.success(`${config.value.block_doctype} created successfully`);
 	} catch (error) {
-		toast.error("Failed to create block");
+		console.error('Error creating block:', error);
+		toast.error(`Failed to create ${config.value.block_doctype}: ${error.message}`);
 	}
 };
 
@@ -660,7 +893,36 @@ const handleAssignTask = async (data) => {
 };
 
 const toggleUnassignedPanel = () => {
-	showUnassignedPanel.value = !showUnassignedPanel.value;
+	showUnassignedDialog.value = true;
+};
+
+const getFieldLabel = (fieldName) => {
+	if (!fieldName) return "";
+	// Use metadata label if available, otherwise format field name
+	if (fieldMetadata.value[fieldName] && fieldMetadata.value[fieldName].label) {
+		return fieldMetadata.value[fieldName].label;
+	}
+	return fieldName.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+};
+
+const getFieldType = (fieldName) => {
+	if (!fieldName) return "text";
+	
+	// Use metadata to determine field type
+	if (fieldMetadata.value[fieldName]) {
+		const fieldType = fieldMetadata.value[fieldName].fieldtype;
+		if (fieldType === "Date") return "date";
+		if (fieldType === "Datetime") return "datetime";
+		if (fieldType === "Time") return "time";
+		return "text";
+	}
+	
+	// Default fallback for date fields
+	if (fieldName && (fieldName.includes('date') || fieldName.includes('Date'))) {
+		return "date";
+	}
+	
+	return "text";
 };
 
 // Watch for configuration changes

@@ -98,7 +98,7 @@
 									},
 								]"
 								:style="getBlockStyle(block)"
-								@click="$emit('blockClick', block.id)"
+								@click="handleBlockClick(block)"
 							>
 								<div class="truncate mb-1.5 pointer-events-none text-base font-medium">
 									{{ getBlockTitle(block) }}
@@ -135,7 +135,7 @@
 										? 'visible'
 										: 'invisible'
 								"
-								@click="$emit('addBlock', { rowId: row.id, date: column.key })"
+								@click="handleAddBlock(row.id, column.key)"
 							/>
 						</div>
 					</td>
@@ -381,6 +381,16 @@ const handleBlockDragStart = (block, event) => {
 const handleBlockDragEnd = () => {
 	draggedBlock.value = null;
 	dragOverCell.value = { row: "", date: "" };
+};
+
+const handleAddBlock = (rowId, date) => {
+	emit('addBlock', { rowId, date, config: props.config });
+};
+
+const handleBlockClick = (block) => {
+	const doctype = props.config.block_doctype.toLowerCase().replace(/ /g, '-');
+	const url = `/app/${doctype}/${block.name}`;
+	window.open(url, '_blank');
 };
 </script>
 

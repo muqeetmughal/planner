@@ -413,3 +413,95 @@ def create_job_card_from_work_order(work_order_name, workstation_name, planned_s
 			"success": False,
 			"error": str(e)
 		}
+
+@frappe.whitelist()
+def create_dynamic_block(block_data, configuration_name):
+	"""Create a new block based on dynamic configuration"""
+	try:
+		# Parse block_data if it's a string
+		if isinstance(block_data, str):
+			block_data = json.loads(block_data)
+		
+		# Get configuration
+		config = frappe.get_doc("Timeline Configuration", configuration_name)
+		if not config.is_active:
+			frappe.throw(_("Timeline Configuration is not active"))
+		
+		# Get the block meta to check field types
+		block_meta = frappe.get_meta(config.block_doctype)
+		
+		# Process date fields based on their types
+		date_fields = [config.block_to_date_field, config.date_range_start_field, config.date_range_end_field]
+		for field_name in date_fields:
+			if field_name and field_name in block_data:
+				field_meta = block_meta.get_field(field_name)
+				if field_meta:
+					if field_meta.fieldtype == "Date":
+						# Convert to date only
+						if isinstance(block_data[field_name], str):
+							block_data[field_name] = getdate(block_data[field_name])
+					elif field_meta.fieldtype == "Datetime":
+						# Convert to datetime
+						if isinstance(block_data[field_name], str):
+							# If it's just a date string, add time
+							if len(block_data[field_name]) == 10:  # YYYY-MM-DD format
+								block_data[field_name] = block_data[field_name] + " 00:00:00"
+							block_data[field_name] = frappe.utils.get_datetime(block_data[field_name])
+		
+		# Create the block document
+		block_doc = frappe.get_doc(block_data)
+		block_doc.insert(ignore_permissions=True)
+		frappe.db.commit()
+		
+		return {
+			"success": True,
+			"message": f"{config.block_doctype} created successfully",
+			"block": block_doc.as_dict()
+		}
+		
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Create Dynamic Block Error")
+		frappe.db.rollback()
+		return {
+			"success": False,
+			"error": str(e)
+		}
+
+@frappe.whitelist()
+def get_configuration_field_metadata(configuration_name):
+	"""Get field metadata for a configuration to help with dynamic form creation"""
+	try:
+		config = frappe.get_doc("Timeline Configuration", configuration_name)
+		if not config.is_active:
+			frappe.throw(_("Timeline Configuration is not active"))
+		
+		# Get block meta
+		block_meta = frappe.get_meta(config.block_doctype)
+		
+		# Get field metadata for date fields
+		field_metadata = {}
+		date_fields = [config.block_to_date_field, config.date_range_start_field, config.date_range_end_field]
+		
+		for field_name in date_fields:
+			if field_name:
+				field_meta = block_meta.get_field(field_name)
+				if field_meta:
+					field_metadata[field_name] = {
+						"fieldtype": field_meta.fieldtype,
+						"label": field_meta.label or field_name,
+						"options": field_meta.options,
+						"reqd": field_meta.reqd
+					}
+		
+		return {
+			"success": True,
+			"field_metadata": field_metadata,
+			"config": config.as_dict()
+		}
+		
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Get Configuration Field Metadata Error")
+		return {
+			"success": False,
+			"error": str(e)
+		}

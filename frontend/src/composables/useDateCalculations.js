@@ -20,7 +20,7 @@ export function useDateCalculations() {
         const end = new Date(start)
         const days = viewMode === 'week' ? 6 : 13
         end.setDate(start.getDate() + days)
-        return `\${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - \${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\``
+        return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
       case 'month':
         return currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
       default:

@@ -996,3 +996,35 @@ def create_sample_workstation_configuration():
 			"success": False,
 			"error": str(e)
 		}
+
+@frappe.whitelist()
+def create_dynamic_block(block_data, configuration_name):
+	"""Create a new block based on dynamic configuration"""
+	try:
+		# Parse block_data if it's a string
+		if isinstance(block_data, str):
+			block_data = json.loads(block_data)
+		
+		# Get configuration
+		config = frappe.get_doc("Timeline Configuration", configuration_name)
+		if not config.is_active:
+			frappe.throw(_("Timeline Configuration is not active"))
+		
+		# Create the block document
+		block_doc = frappe.get_doc(block_data)
+		block_doc.insert(ignore_permissions=True)
+		frappe.db.commit()
+		
+		return {
+			"success": True,
+			"message": f"{config.block_doctype} created successfully",
+			"block": block_doc.as_dict()
+		}
+		
+	except Exception as e:
+		frappe.log_error(frappe.get_traceback(), "Create Dynamic Block Error")
+		frappe.db.rollback()
+		return {
+			"success": False,
+			"error": str(e)
+		}

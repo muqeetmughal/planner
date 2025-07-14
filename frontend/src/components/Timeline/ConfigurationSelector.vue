@@ -1,11 +1,11 @@
 <template>
-  <div class="configuration-selector">
+  <div class="p-6">
     <!-- Header -->
     <div class="mb-6">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">
         Choose Timeline View
       </h2>
-      <p class="text-gray-600 dark:text-gray-400">
+      <p class="text-gray-600">
         Select a timeline configuration to visualize your data in different ways
       </p>
     </div>
@@ -16,24 +16,20 @@
         <div
           class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"
         ></div>
-        <span class="text-gray-600 dark:text-gray-400"
-          >Loading configurations...</span
-        >
+        <span class="text-gray-600">Loading configurations...</span>
       </div>
     </div>
 
     <!-- Error State -->
     <div
       v-else-if="error"
-      class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+      class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6"
     >
       <div class="flex items-center gap-2">
         <FeatherIcon name="alert-circle" class="w-5 h-5 text-red-500" />
-        <span class="text-red-700 dark:text-red-400 font-medium"
-          >Error loading configurations</span
-        >
+        <span class="text-red-700 font-medium">Error loading configurations</span>
       </div>
-      <p class="text-red-600 dark:text-red-300 text-sm mt-1">{{ error }}</p>
+      <p class="text-red-600 text-sm mt-1">{{ error }}</p>
       <Button
         variant="outline"
         theme="red"
@@ -49,14 +45,14 @@
     <!-- Empty State -->
     <div v-else-if="configurations.length === 0" class="text-center py-12">
       <div
-        class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+        class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"
       >
         <FeatherIcon name="calendar" class="w-8 h-8 text-gray-400" />
       </div>
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+      <h3 class="text-lg font-medium text-gray-900 mb-2">
         No Timeline Configurations
       </h3>
-      <p class="text-gray-600 dark:text-gray-400 mb-4">
+      <p class="text-gray-600 mb-4">
         Create a timeline configuration to get started
       </p>
       <Button
@@ -70,77 +66,43 @@
       </Button>
     </div>
 
-    <!-- Configuration Grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div
+    <!-- Configuration List -->
+    <div v-else class="space-y-4">
+      <ListItem
         v-for="config in configurations"
         :key="config.name"
-        class="configuration-card group cursor-pointer bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200"
+        :title="config.configuration_name"
+        :description="config.description || `Timeline view showing ${config.block_doctype} blocks organized by ${config.row_doctype}`"
         @click="selectConfiguration(config)"
+        clickable
       >
-        <!-- Card Header -->
-        <div class="flex items-start justify-between mb-4">
-          <div class="flex items-center gap-3">
-            <div
-              class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
-            >
-              <FeatherIcon name="grid" class="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3
-                class="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-              >
-                {{ config.configuration_name }}
-              </h3>
-              <div class="flex items-center gap-2 mt-1">
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ config.row_doctype }} → {{ config.block_doctype }}
-                </span>
-              </div>
-            </div>
+        <template #prefix>
+          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <FeatherIcon name="grid" class="w-4 h-4 text-blue-600" />
           </div>
-
-          <!-- Arrow Icon -->
-          <FeatherIcon
-            name="arrow-right"
-            class="w-5 h-5 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-200"
-          />
-        </div>
-
-        <!-- Description -->
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-          {{
-            config.description ||
-            `Timeline view showing ${config.block_doctype} blocks organized by ${config.row_doctype}`
-          }}
-        </p>
-
-        <!-- Configuration Details -->
-        <div class="space-y-2">
-          <div
-            class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
-          >
-            <FeatherIcon name="layers" class="w-3 h-3" />
-            <span>Rows: {{ config.row_doctype }}</span>
+        </template>
+        
+        <template #subtitle>
+          <div class="flex items-center gap-2 mt-1">
+            <Badge variant="subtle" theme="blue" size="sm">
+              {{ config.row_doctype }}
+            </Badge>
+            <FeatherIcon name="arrow-right" class="w-3 h-3 text-gray-400" />
+            <Badge variant="subtle" theme="green" size="sm">
+              {{ config.block_doctype }}
+            </Badge>
           </div>
-          <div
-            class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
-          >
-            <FeatherIcon name="square" class="w-3 h-3" />
-            <span>Blocks: {{ config.block_doctype }}</span>
-          </div>
-        </div>
+        </template>
 
-        <!-- Hover Effect -->
-        <div
-          class="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-        ></div>
-      </div>
+        <template #suffix>
+          <FeatherIcon name="chevron-right" class="w-4 h-4 text-gray-400" />
+        </template>
+      </ListItem>
     </div>
 
     <!-- Action Buttons -->
     <div
-      class="flex items-center justify-between mt-8 pt-6 border-t border-gray-200 dark:border-gray-700"
+      class="flex items-center justify-between mt-8 pt-6 border-t border-gray-200"
     >
       <div class="flex items-center gap-3">
         <Button
@@ -164,7 +126,7 @@
         </Button>
       </div>
 
-      <div class="text-sm text-gray-500 dark:text-gray-400">
+      <div class="text-sm text-gray-500">
         {{ configurations.length }} configuration{{
           configurations.length !== 1 ? "s" : ""
         }}
@@ -176,7 +138,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { Button, FeatherIcon } from "frappe-ui";
+import { Button, FeatherIcon, ListItem, Badge } from "frappe-ui";
 import { call } from "frappe-ui";
 import { toast } from "../../composables/useToast";
 
@@ -194,7 +156,7 @@ const loadConfigurations = async () => {
   error.value = null;
 
   try {
-    const response = await call("planner.api.get_timeline_configurations");
+    const response = await call("planner.api.timeline_data.get_timeline_configurations");
     configurations.value = response || [];
   } catch (err) {
     error.value = err.message || "Failed to load configurations";
@@ -213,7 +175,7 @@ const createSampleConfiguration = async () => {
 
   try {
     const response = await call(
-      "planner.api.create_sample_workstation_configuration",
+      "planner.api.timeline_data.create_sample_workstation_configuration",
     );
 
     if (response.success) {
@@ -244,55 +206,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.configuration-selector {
-  @apply max-w-6xl mx-auto p-6;
-}
-
-.configuration-card {
-  @apply relative overflow-hidden;
-}
-
-.configuration-card::before {
-  content: "";
-  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent;
-  transform: translateX(-100%);
-  transition: transform 0.6s ease;
-}
-
-.configuration-card:hover::before {
-  transform: translateX(100%);
-}
-
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Animation for loading state */
-@keyframes pulse-subtle {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-.animate-pulse-subtle {
-  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .configuration-selector {
-    @apply p-4;
-  }
-
-  .configuration-card {
-    @apply p-4;
-  }
-}
+/* Minimal custom styling - let Frappe UI handle the rest */
 </style>
