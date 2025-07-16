@@ -303,11 +303,12 @@
 							/>
 							<FormControl
 								type="autocomplete"
-								:label="getFieldLabel(config.row_to_block_field)"
+								:label="getFieldLabel(config.field_mappings?.row_to_block_field || config.row_to_block_field)"
 								v-model="newBlockForm.row_assignment"
 								:options="rowOptions"
 								:placeholder="`Select ${config.row_doctype || 'row'}`"
 								required
+								@change="(value) => { console.log('Row assignment changed to:', value); newBlockForm.row_assignment = value; }"
 							/>
 						</div>
 						<div class="grid grid-cols-2 gap-4" v-if="config.block_priority_field">
@@ -385,6 +386,9 @@
 				<Button variant="outline" @click="showAddBlockDialog = false">
 					Cancel
 				</Button>
+				<!-- <Button variant="ghost" @click="() => { console.log('Current form state:', newBlockForm.value); console.log('addBlockData:', addBlockData.value); }">
+					Debug
+				</Button> -->
 				<Button variant="solid" @click="handleCreateBlock">
 					Create {{ config?.block_doctype || 'Block' }}
 				</Button>
@@ -553,7 +557,7 @@ const unassignedBlocks = computed(() => {
 const rowOptions = computed(() => {
 	return rows.value.map(row => ({
 		label: row.label || row.name,
-		value: row.name
+		value: row.id
 	}));
 });
 
@@ -612,6 +616,9 @@ const navigateDate = (direction) => {
 	let daysToMove;
 
 	switch (currentViewMode.value) {
+		case "day":
+			daysToMove = 1;
+			break;
 		case "week":
 			daysToMove = 7;
 			break;
@@ -703,6 +710,9 @@ const handleBlockClick = (blockId) => {
 const handleAddBlock = async (data) => {
 	addBlockData.value = data;
 	
+	// Debug logging
+	console.log('handleAddBlock called with data:', data);
+	
 	// Ensure metadata is loaded before showing the dialog
 	if (!fieldMetadata.value || Object.keys(fieldMetadata.value).length === 0) {
 		try {
@@ -732,6 +742,20 @@ const handleAddBlock = async (data) => {
 	// Pre-populate row assignment if provided
 	if (data && data.rowId) {
 		newBlockForm.value.row_assignment = data.rowId;
+		console.log('Row assignment set to:', data.rowId);
+		console.log('Available row options:', rowOptions.value);
+		
+		// Verify the rowId exists in the options
+		const matchingOption = rowOptions.value.find(option => option.value === data.rowId);
+		if (!matchingOption) {
+			console.warn('Row ID not found in options:', data.rowId);
+		} else {
+			console.log('Found matching option:', matchingOption);
+		}
+		
+		setTimeout(() => {
+			console.log('Form state after timeout:', newBlockForm.value.row_assignment);
+		}, 100);
 	}
 };
 
@@ -795,14 +819,34 @@ const handleCreateBlock = async () => {
 		};
 
 		// Build dynamic block data based on configuration
+		const rowAssignmentValue = newBlockForm.value.row_assignment || addBlockData.value?.rowId;
+		const rowToBlockField = config.value.field_mappings?.row_to_block_field || config.value.row_to_block_field || 'workstation';
+		const blockToDateField = config.value.block_to_date_field || 'operation_start';
+		
+		console.log('Configuration fields:', {
+			row_to_block_field: rowToBlockField,
+			block_to_date_field: blockToDateField,
+			field_mappings: config.value.field_mappings,
+			config: config.value
+		});
+		
 		const blockData = {
 			doctype: config.value.block_doctype,
-			[config.value.row_to_block_field]: newBlockForm.value.row_assignment || addBlockData.value?.rowId,
-			[config.value.block_to_date_field]: formatDateForAPI(
+			[rowToBlockField]: rowAssignmentValue,
+			[blockToDateField]: formatDateForAPI(
 				newBlockForm.value.start_date, 
-				getFieldType(config.value.block_to_date_field)
+				getFieldType(blockToDateField)
 			),
 		};
+		
+		// Debug logging
+		console.log('Block creation data:', {
+			blockData,
+			configRowField: rowToBlockField,
+			formRowAssignment: newBlockForm.value.row_assignment,
+			addBlockDataRowId: addBlockData.value?.rowId,
+			finalRowValue: rowAssignmentValue
+		});
 
 		// Add title only if provided
 		if (newBlockForm.value.title && newBlockForm.value.title.trim()) {
@@ -844,6 +888,8 @@ const handleCreateBlock = async () => {
 			block_data: blockData,
 			configuration_name: config.value.name
 		});
+
+		console.log('Block creation response:', response);
 
 		if (!response.success) {
 			throw new Error(response.error || 'Failed to create block');

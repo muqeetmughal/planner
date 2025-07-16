@@ -572,8 +572,20 @@ def create_dynamic_block(block_data, configuration_name):
 		if not config.is_active:
 			frappe.throw(_("Timeline Configuration is not active"))
 		
+		row_field_value = block_data.get(config.row_to_block_field, 'NOT_SET')
+		frappe.log_error(f"Block creation - Config: {config.name}, Row field: {config.row_to_block_field}, Value: {row_field_value}", "Block Creation Debug")
+		
 		# Get the block meta to check field types
 		block_meta = frappe.get_meta(config.block_doctype)
+		
+		# Process row assignment field validation
+		if config.row_to_block_field and config.row_to_block_field in block_data:
+			row_field_meta = block_meta.get_field(config.row_to_block_field)
+			if row_field_meta and row_field_meta.fieldtype == "Link":
+				# Validate that the row exists
+				row_value = block_data[config.row_to_block_field]
+				if row_value and not frappe.db.exists(row_field_meta.options, row_value):
+					frappe.throw(_(f"Invalid {row_field_meta.label}: {row_value} does not exist in {row_field_meta.options}"))
 		
 		# Process date fields based on their types
 		date_fields = [config.block_to_date_field, config.date_range_end_field]

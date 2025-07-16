@@ -30,9 +30,9 @@
             </Button>
 
             <!-- Settings Button -->
-            <Button variant="ghost" theme="gray" size="sm" @click="showSettings = true">
+            <!-- <Button variant="ghost" theme="gray" size="sm" @click="showSettings = true">
               <FeatherIcon name="settings" class="w-4 h-4" />
-            </Button>
+            </Button> -->
           </div>
         </div>
       </div>

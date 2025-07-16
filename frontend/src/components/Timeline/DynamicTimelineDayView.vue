@@ -1,6 +1,6 @@
 <template>
   <div class="day-view-container h-full flex flex-col bg-gray-50">
-    <!-- Frappe UI Compatible Header -->
+    <!-- Header -->
     <div class="day-view-header bg-white border-b sticky top-0 z-30">
       <div class="px-4 lg:px-6 py-4">
         <!-- Header Top Row -->
@@ -340,7 +340,7 @@ const emit = defineEmits([
 const timeGranularity = ref(60); // minutes
 const startHour = ref(7); // 7 AM
 const endHour = ref(19); // 7 PM 
-const resourceColumnWidth = ref(260); // Frappe UI friendly width
+const resourceColumnWidth = ref(260);
 const selectedBlock = ref(null);
 const draggedBlock = ref(null);
 const dragOverResource = ref(null);
@@ -529,9 +529,9 @@ const formatHour = (hour) => {
 
 const getHourHeight = () => {
   const heightMap = {
-    15: 80, // Good for detailed scheduling
+    15: 80,
     30: 64,
-    60: 48, // Frappe UI friendly height
+    60: 48,
   };
   return heightMap[timeGranularity.value] || 48;
 };
@@ -610,6 +610,11 @@ const handleGridScroll = (event) => {
 const handleBlockClick = (block, event) => {
   selectedBlock.value = selectedBlock.value?.id === block.id ? null : block;
   emit("blockClick", block, event);
+  
+  // Redirect to document in desk (similar to week view)
+  const doctype = props.config.block_doctype.toLowerCase().replace(/ /g, '-');
+  const url = `/app/${doctype}/${block.name}`;
+  window.open(url, '_blank');
 };
 
 const handleBlockDragStart = (block) => {
@@ -652,10 +657,19 @@ const handleDrop = (event, resourceId) => {
   const newDateTime = new Date(props.currentDate);
   newDateTime.setHours(droppedHour, snappedMinutes, 0, 0);
   
+  // Format datetime as timezone-naive string (YYYY-MM-DD HH:MM:SS)
+  const year = newDateTime.getFullYear();
+  const month = String(newDateTime.getMonth() + 1).padStart(2, '0');
+  const day = String(newDateTime.getDate()).padStart(2, '0');
+  const hours = String(newDateTime.getHours()).padStart(2, '0');
+  const minutes = String(newDateTime.getMinutes()).padStart(2, '0');
+  const seconds = String(newDateTime.getSeconds()).padStart(2, '0');
+  const formattedDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  
   emit("blockMove", {
     blockId: draggedBlock.value.id,
     newRowId: resourceId,
-    newDateTime: newDateTime.toISOString(),
+    newDateTime: formattedDateTime,
     originalBlock: draggedBlock.value
   });
   
@@ -691,10 +705,19 @@ const handleResourceColumnClick = (event, resourceId) => {
   const clickDateTime = new Date(props.currentDate);
   clickDateTime.setHours(clickedHour, snappedMinutes, 0, 0);
   
-  // Emit add block event
+  // Format datetime as timezone-naive string (YYYY-MM-DD HH:MM:SS)
+  const year = clickDateTime.getFullYear();
+  const month = String(clickDateTime.getMonth() + 1).padStart(2, '0');
+  const day = String(clickDateTime.getDate()).padStart(2, '0');
+  const hours = String(clickDateTime.getHours()).padStart(2, '0');
+  const minutes = String(clickDateTime.getMinutes()).padStart(2, '0');
+  const seconds = String(clickDateTime.getSeconds()).padStart(2, '0');
+  const formattedDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  
+  // Emit add block event - use rowId to match grid view naming
   emit('addBlock', {
-    resourceId,
-    dateTime: clickDateTime.toISOString(),
+    rowId: resourceId,
+    dateTime: formattedDateTime,
     date: clickDateTime.toISOString().split('T')[0]
   });
   
@@ -725,12 +748,10 @@ onUnmounted(() => {
 
 /* Scroll synchronization - ensure time column and headers don't scroll independently */
 .time-slots {
-  /* Remove scrollbar since it's controlled by main grid */
   overflow: hidden;
 }
 
 .resource-headers {
-  /* Remove horizontal scrollbar since it's controlled by main grid */
   overflow: hidden;
 }
 

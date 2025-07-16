@@ -24,19 +24,23 @@
     @dragend="handleDragEnd"
     @contextmenu="handleContextMenu"
     @mouseenter="showControls = true"
-    @mouseleave="showControls = false"
+    @mouseleave="handleMouseLeave"
   >
     <!-- Resize Handle (Left) - Only show on start cell -->
     <div
       v-if="resizable && hasDateRange && !unassigned && isStartCell"
       class="resize-handle resize-left absolute left-0 top-0 bottom-0 w-2 cursor-w-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-10"
+      :draggable="false"
       @mousedown="startResize('left', $event)"
+      @dragstart.prevent.stop
     >
       <div
         class="w-full h-full bg-blue-500 hover:bg-blue-600 shadow-sm"
         :class="{
           'rounded-l-lg': cellPosition === 'single' || cellPosition === 'start'
         }"
+        :draggable="false"
+        @dragstart.prevent.stop
       ></div>
     </div>
 
@@ -254,13 +258,17 @@
     <div
       v-if="resizable && hasDateRange && !unassigned && isEndCell"
       class="resize-handle resize-right absolute right-0 top-0 bottom-0 w-2 cursor-e-resize opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity z-10"
+      :draggable="false"
       @mousedown="startResize('right', $event)"
+      @dragstart.prevent.stop
     >
       <div
         class="w-full h-full bg-blue-500 hover:bg-blue-600 shadow-sm"
         :class="{
           'rounded-r-lg': cellPosition === 'single' || cellPosition === 'end'
         }"
+        :draggable="false"
+        @dragstart.prevent.stop
       ></div>
     </div>
 
@@ -841,9 +849,16 @@ const handleClick = (event) => {
   emit("click", props.block, event);
 };
 
+const handleMouseLeave = () => {
+  showControls.value = false;
+  // Don't reset resizing state here as it might be in progress
+};
+
 const handleDragStart = (event) => {
   if (resizing.value) {
     event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
     return;
   }
 
@@ -881,6 +896,7 @@ const startResize = (direction, event) => {
 
   event.preventDefault();
   event.stopPropagation();
+  event.stopImmediatePropagation();
 
   resizing.value = true;
   resizeDirection.value = direction;
@@ -964,6 +980,11 @@ const startResize = (direction, event) => {
     resizeDirection.value = null;
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
+    
+    // Re-enable dragging after resize is complete
+    setTimeout(() => {
+      dragging.value = false;
+    }, 50);
   };
 
   document.addEventListener("mousemove", handleMouseMove);
